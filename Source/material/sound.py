@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""sound.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 サウンドモジュール。
@@ -38,9 +38,9 @@ class BGM(object):
             BGM.__channel = _pygame.mixer.Channel(0)
             BGM.__channel.set_endevent(_pygame.USEREVENT)
         container = _packer.Container(self.source)
-        for name in (("Menu",)+tuple("LV"+str(i) for i in range(1, 5))):
+        for name in (("menu",)+tuple("lv"+str(i) for i in range(1, 5))):
             BGM.__dict[name] = tuple(
-                _pygame.mixer.Sound(container.get(
+                _pygame.mixer.Sound(file=container.get(
                     "{name}_{part}.ogg".format(name=name, part=part))) for
                 part in ("init", "loop"))
 
@@ -130,7 +130,7 @@ class SE(object):
         container = _packer.Container(self.source)
         for filename in container.keys:
             name,  _ = _os.path.splitext(filename)
-            SE.__dict[name] = _pygame.mixer.Sound(container.get(filename))
+            SE.__dict[name] = _pygame.mixer.Sound(file=container.get(filename))
 
     @classmethod
     def play(cls, name):

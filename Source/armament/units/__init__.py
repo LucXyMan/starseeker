@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""units.__init__.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 ユニットパッケージ。
@@ -13,9 +13,8 @@ import player as __player
 import creature as __creature
 import group as __group
 get_player = __data.Player.get_collection
-get_player_all = __data.Player.get_collections
-get_creature = __data.Summon.get_collection
-get_creature_all = __data.Summon.get_collections
+get_players = __data.Player.get_collections
+get_summons = __data.Summon.get_collections
 Unit = __unit.Unit
 Player = __player.Player
 Creature = __creature.Creature

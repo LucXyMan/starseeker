@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""creature.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 クリーチャーモジュール。
@@ -16,7 +16,7 @@ import sprites.effects as _effects
 
 class Creature(__unit.Unit):
     u"""クリーチャー。
-    プレイヤーの分身になる。
+    プレイヤーの分身。
     """
     __POISON_RATE = 0.025
     __REGENERATION_RATE = 0.0125
@@ -26,33 +26,34 @@ class Creature(__unit.Unit):
         """
         __STAR_NUMBER = 8
         __STAR_SPEED = 3
-        __params = ()
+        __star_vectors = ()
 
-        def __init__(self, pos, groups=None):
+        def __init__(self, unit, groups=None):
             u"""コンストラクタ。
             """
             def __init_params():
-                u"""爆発に必要なパラメータを設定。
+                u"""爆発に必要なパラメータ設定。
                 """
                 import math as __math
-                if not Creature._Explosion.__params:
-                    angle = 6.28/self.__STAR_NUMBER
-                    Creature._Explosion.__params = tuple((
+                if not Creature._Explosion.__star_vectors:
+                    angle = __math.pi*2/self.__STAR_NUMBER
+                    Creature._Explosion.__star_vectors = tuple((
                         round(__math.cos(i*angle)*self.__STAR_SPEED),
                         round(__math.sin(i*angle)*self.__STAR_SPEED)) for
                         i in range(self.__STAR_NUMBER))
+            self.__unit = unit
             self._images = self._generate(self.__STAR_NUMBER)
             __init_params()
-            super(Creature._Explosion, self).__init__(pos, groups)
+            super(Creature._Explosion, self).__init__((0, 0), groups)
 
         def _generate(self, period):
-            u"""エフェクト画像の生成。
+            u"""エフェクト画像生成。
             """
             class _RainbowStar(_effects.image.Image):
                 u"""虹色の星型。
                 クリーチャー撃破時のエフェクトに使用。
                 """
-                __MOVE_PERIOD = 5
+                __MOVE_PERIOD = 3
 
                 def __init__(self, pos, number, direction, groups=None):
                     u"""コンストラクタ。
@@ -62,7 +63,7 @@ class Creature(__unit.Unit):
                         pos, "comet_"+str(number & 0x07), direction, groups)
 
                 def _generate(self, sources, direction):
-                    u"""エフェクト画像の生成。
+                    u"""エフェクト画像生成。
                     """
                     for image in self._get_images(sources):
                         for _ in range(_const.FRAME_DELAY):
@@ -73,45 +74,38 @@ class Creature(__unit.Unit):
             for i in range(period):
                 yield _image.get_dummy(), (0, 0)
                 _RainbowStar(
-                    self.rect.center, i, Creature._Explosion.__params[i])
+                    self.__unit.rect.center, i,
+                    Creature._Explosion.__star_vectors[i])
 
-    def __init__(self, pos, data, packet):
+    def __init__(self, pos, data, packet, group=None):
         u"""コンスタラクタ。
         """
-        import sprites.indicator as __indicator
+        import sprites.huds as __huds
         self.__is_destroyed = False
         self.__is_poison = False
         self.__frozen_time = 0
-        super(Creature, self).__init__(pos, data, packet)
-        self.__life = self.__max_life = self._data.life
+        self.__life = self.__max_life = data.life
+        super(Creature, self).__init__(pos, data, packet, group)
         if data.tribe == _const.BEAST_TRIBE:
-            self.power_plus(1)
+            self.enhance(0, 1)
         elif data.tribe == _const.ALCHMIC_TRIBE:
-            self.protect_plus(1)
+            self.enhance(1, 1)
         elif data.tribe == _const.SKY_TRIBE:
-            self.speed_plus(1)
-        __indicator.Life(self)
-        __indicator.Frozen(self)
+            self.enhance(2, 1)
+        __huds.Life(self)
+        __huds.Freeze(self)
 
     def __repr__(self):
         u"""文字列表現取得。
         """
         return (
-            u"<type: {type}, name: {name}, power_ups: {power_up}, "
+            u"<type: {type}, name: {name}, level: {level}, "
             u"direction: {direction}, state: {state}>").format(
             type=self.__class__.__name__, name=self._data.name,
-            power_up=self.power_up_level,
+            level=self.level,
             direction="Right" if self._is_right else "Left", state=self.state)
 
-    def destroy(self):
-        u"""撃破時エフェクト。
-        """
-        import material.sound as __sound
-        __sound.SE.play("ShockWave")
-        self._Explosion(self.rect.center)
-        self.flash("Summon")
-        self.__is_destroyed = True
-
+    # ---- Charge ----
     def charge(self, onepieces):
         u"""チャージ処理。
         消去したライン得点をチャージする。
@@ -123,8 +117,9 @@ class Creature(__unit.Unit):
         else:
             super(Creature, self).charge(onepieces)
 
+    # ---- Attack and Defense ----
     def attack(self):
-        u"""攻撃の処理。
+        u"""攻撃処理。
         """
         if not self.is_frozen:
             lv = self._power/self._packet
@@ -136,15 +131,24 @@ class Creature(__unit.Unit):
         return 0, 0
 
     def receive(self, stroke):
-        u"""攻撃の受け取り処理。
+        u"""攻撃受け取り処理。
         """
-        self.life -= stroke
+        self.life_with_effect -= stroke
         if self.__life < 0:
             return abs(self.__life)
         return 0
 
+    # ---- Power Up ----
+    def enhance(self, type_, plus):
+        u"""パワーアップ追加。
+        毒状態の時にパワーアップ無効。
+        """
+        if not self.is_poison or self.is_undead:
+            super(Creature, self).enhance(type_, plus)
+
+    # ---- Status Effect ----
     def poisoning(self):
-        u"""毒状態を設定。
+        u"""毒効果。
         """
         self.__is_poison = False if self.is_frozen else True
 
@@ -153,10 +157,11 @@ class Creature(__unit.Unit):
         """
         self.__frozen_time = int(0 if self.__is_poison else self._packet << 2)
 
-    def death(self, force=False):
-        u"""即死効果。不死属性の場合無効。
+    def death(self, is_force=False):
+        u"""即死効果。
+        不死属性の場合無効。
         """
-        if not self.is_undead or force:
+        if is_force or not self.is_undead:
             self.__life = 0
             return True
         return False
@@ -181,38 +186,60 @@ class Creature(__unit.Unit):
             self.__life = (
                 recovery if recovery < self.__max_life else self.__max_life)
 
-    def get_special(self, level):
-        u"""攻撃時の特殊効果を取得。
+    # ---- Ability ----
+    def get_enchant(self, level):
+        u"""エンチャント効果取得。
         """
-        skill = self._data.skill
-        if (
-            level and not self.is_frozen and skill and
-            skill.type == _const.ATTACK_SKILL_TYPE
-        ):
-            new, old = self._data.skill.target.split("##")
-            rank = self._data.rank
-            return new, old.split("#"), (
-                (1, 1) if self._data.skill.is_single else
-                (level*rank, level*rank+1))
-        else:
-            return ()
+        ability = self._data.ability
+        if ability:
+            enchant = ability.enchant
+            if level and not self.is_frozen and enchant:
+                new, old = enchant.split("##")
+                rank = self._data.rank
+                return new, old.split("#"), (
+                    (1, 1) if ability.is_single else
+                    (level*rank, level*rank+1))
+        return ()
 
-    def get_sustain(self, turn):
-        u"""持続特殊効果を取得。
+    def get_persistence(self, turn):
+        u"""持続効果取得。
         """
-        skill = self._data.skill
-        if (
-            not self.is_frozen and skill and
-            skill.type == _const.SUSTAIN_SKILL_TYPE and
-            turn & self._data.skill.sustain == 0
-        ):
-            new, old = self._data.skill.target.split("##")
-            return new, old.split("#"), (1, 1)
-        else:
-            return ()
+        ability = self._data.ability
+        if ability:
+            persistence = ability.persistence
+            if (
+                not self.is_frozen and persistence and
+                turn & ability.interval == 0
+            ):
+                new, old = persistence.split("##")
+                return new, old.split("#"), (1, 1)
+        return ()
+
+    # ---- Summon ----
+    def adapt(self, target):
+        u"""融合可能な場合、融合後クリーチャーを返す。
+        そうでない場合Noneを返す。
+        """
+        return self._data.adapt(target)
+
+    def copy_parameter(self, unit):
+        u"""unitのパラメータを自身にコピーする。
+        """
+        self.__life = unit.__life
+        self.__power_ups = unit.power_ups
+        self.__is_poison = unit.__is_poison
+        self.__frozen_time = unit.__frozen_time
+        self._power = unit._power
+
+    # ---- Update ----
+    def _update_finish(self):
+        u"""終了時更新。
+        """
+        if self.__is_destroyed:
+            self.kill()
 
     def add_effect(self, effect):
-        u"""エフェクトの追加。
+        u"""エフェクト追加。
         文字表示エフェクトが存在する場合にkillする。
         """
         if self._effect and not self._effect.is_dead:
@@ -220,20 +247,42 @@ class Creature(__unit.Unit):
             self._effect = None
         self._effect = effect
 
-    def adapt(self, target):
-        u"""融合可能な場合、融合後クリーチャーを返す。そうでない場合Noneを返す。
+    def destroy(self):
+        u"""撃破処理。
         """
-        return self._data.adapt(target)
+        import material.sound as __sound
+        __sound.SE.play("shockwave")
+        self._Explosion(self)
+        self.flash("summon")
+        self.__life = 0
+        self.__is_destroyed = True
 
-    def _update_finish(self):
-        u"""終了時更新。
+    # ---- Property ----
+    @property
+    def name(self):
+        u"""名前取得。
         """
-        if self.__is_destroyed:
-            self.kill()
+        return self._data.name
 
     @property
+    def recepters(self):
+        u"""受容可能クリーチャー名取得。
+        """
+        return self._data.recepters
+
+    @property
+    def state(self):
+        u"""現在状態取得。
+        """
+        return (
+            u"Poison" if self.is_poison else
+            u"Freeze" if self.is_frozen else
+            u"Normal")
+
+    # ------ Image ------
+    @property
     def base_image(self):
-        u"""基本画像を取得。
+        u"""基本画像取得。
         """
         return self._data.get_image(False)
 
@@ -249,65 +298,48 @@ class Creature(__unit.Unit):
             image = _image.get_colored_ave(image, _const.CYAN)
         return image
 
-    @property
-    def is_half(self):
-        u"""ライフが半分かどうかの判定。
-        """
-        return self.__life <= self.__max_life >> 1
-
-    @property
-    def is_quarter(self):
-        u"""ライフが1/4かどうかの判定。
-        """
-        return self.__life <= self.__max_life >> 2
-
-    @property
-    def is_dead(self):
-        u"""ユニットの死亡判定。
-        """
-        return self.__life <= 0
-
-    @property
-    def is_alive(self):
-        u"""ユニットの生存判定。
-        """
-        return not self.is_dead
-
+    # ------ Life ------
     @property
     def max_life(self):
-        u"""最大ライフを取得。
+        u"""最大ライフ取得。
         """
         return self.__max_life
 
     @property
     def life(self):
-        u"""現在ライフを取得。
+        u"""現在ライフ取得。
         """
         return self.__life
 
     @life.setter
     def life(self, value):
-        u"""現在ライフを設定。
+        u"""現在ライフ設定。
+        """
+        self.__life = value
+
+    @life.setter
+    def life_with_effect(self, value):
+        u"""現在ライフをエフェクト付きで設定。
         """
         def __damage_display(damage):
             u"""ダメージ表示。
             """
-            self.flash("Damage")
+            self.flash("damage")
             if damage:
                 self.add_effect(
-                    _effects.Damage(self.rect.midbottom, str(damage)))
+                    _effects.Damage(self.rect.center, str(damage)))
 
         def __recovery_display(recover):
             u"""回復表示。
             """
-            self.flash("Recovery")
+            self.flash("recovery")
             if recover:
                 self.add_effect(
-                    _effects.Recovery(self.rect.midbottom, str(recover)))
+                    _effects.Recovery(self.rect.center, str(recover)))
         if self.__life < value and not self.is_undead:
-            old = self.__life
+            old_life = self.__life
             self.__life = value if value < self.__max_life else self.__max_life
-            __recovery_display(self.__life-old)
+            __recovery_display(self.__life-old_life)
             self.__is_poison = False
             self.__frozen_time = 0
         elif value < self.__life:
@@ -315,12 +347,37 @@ class Creature(__unit.Unit):
             self.__life = value
 
     @property
-    def hialing_priority(self):
-        u"""回復優先度を取得。
+    def is_half(self):
+        u"""ライフ1/2判定。
+        """
+        return self.__life <= self.__max_life >> 1
+
+    @property
+    def is_quarter(self):
+        u"""ライフ1/4判定。
+        """
+        return self.__life <= self.__max_life >> 2
+
+    @property
+    def is_dead(self):
+        u"""ユニット死亡判定。
+        """
+        return self.__life <= 0
+
+    @property
+    def is_alive(self):
+        u"""ユニット生存判定。
+        """
+        return not self.is_dead
+
+    @property
+    def healing_priority(self):
+        u"""回復優先度取得。
         """
         return float(self.__max_life)/float(self.__life)*(
             2 if self.is_poison or self.is_frozen else 1)
 
+    # ------ Status ------
     @property
     def str(self):
         u"""クリーチャーの力。
@@ -331,35 +388,35 @@ class Creature(__unit.Unit):
     def vit(self):
         u"""クリーチャーの生命力。
         """
-        return self._data.vit
+        return self._vit
 
     @property
     def is_poison(self):
-        u"""毒状態を取得。
+        u"""毒状態取得。
         """
         return self.__is_poison
 
     @property
     def frozen_time(self):
-        u"""凍結時間を取得。
+        u"""凍結時間取得。
         """
         return self.__frozen_time
 
     @frozen_time.setter
     def frozen_time(self, value):
-        u"""凍結時間を設定。
+        u"""凍結時間設定。
         """
         self.__frozen_time = 0 if value < 0 else int(value)
 
     @property
     def is_frozen(self):
-        u"""凍結状態かどうかの判定。
+        u"""凍結状態判定。
         """
         return 0 < self.__frozen_time
 
     @property
     def is_healths(self):
-        u"""クリーチャーが健康体かどうか判定。
+        u"""クリーチャーの健康体判定。
         """
         return not self.__is_poison and not self.is_frozen
 
@@ -377,36 +434,21 @@ class Creature(__unit.Unit):
         """
         return self._data.tribe == _const.UNDEAD_TRIBE
 
-    @property
-    def name(self):
-        u"""名前取得。
-        """
-        return self._data.name
-
-    @property
-    def recepters(self):
-        u"""受容可能クリーチャー名取得。
-        """
-        return self._data.recepters
-
+    # ------ Ability ------
     @property
     def prevents(self):
-        u"""状態変化防止文字列取得。
+        u"""防止する変化を取得。
         """
-        skill = self._data.skill
-        if (
-            skill and not self.is_frozen and
-            skill.type == _const.DEFENCE_SKILL_TYPE
-        ):
-            target = skill.target
-            return target.split("#") if target else ()
+        ability = self._data.ability
+        if ability:
+            prevention = ability.prevention
+            if not self.is_frozen and prevention:
+                return prevention.split("#")
         return ()
 
     @property
-    def state(self):
-        u"""現在の状態文字列取得。
+    def skills(self):
+        u"""スキル取得。
         """
-        return (
-            u"Poison" if self.is_poison else
-            u"Frozen" if self.is_frozen else
-            u"Normal")
+        ability = self._data.ability
+        return ability.skills if ability and not self.is_frozen else ""

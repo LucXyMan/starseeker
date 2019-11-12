@@ -2,16 +2,16 @@
 # -*- coding:UTF-8 -*-2
 u"""modeselect.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 モードセレクトモジュール。
 """
 import content as __content
 import input as _input
-import inventory as _inventory
+import inventories as _inventories
 import material.sound as _sound
-import sprites.string as _string
+import sprites as _sprites
 import utils.const as _const
 import utils.layouter as _layouter
 
@@ -20,18 +20,18 @@ class ModeSelect(__content.Content):
     u"""モードセレクト。
     """
     __slots__ = "_selector",
-    __MODES = "Duel#Endless#Versus#Custom#Exit"
+    __MODES = "Duel#Endless#Versus#Customize#Exit"
     __cursor = 0
 
     def __init__(self):
         u"""コンストラクタ。
         """
         import material.misc as _misc
-        import sprites.general as __general
+        import sprites.huds as __huds
         import utils.image as __image
         import utils.screen as __screen
 
-        class _Title(__general.General):
+        class _Title(__huds.HUD):
             u"""タイトルスプライト。
             """
             def __init__(self, groups=None):
@@ -51,7 +51,7 @@ class ModeSelect(__content.Content):
             def __init__(self, string, cursor=0):
                 u"""コンストラクタ。
                 """
-                class _Flashable(_string.String):
+                class _Flashable(_sprites.String):
                     u"""点滅文字列。
                     """
                     __COLORS = (
@@ -69,14 +69,14 @@ class ModeSelect(__content.Content):
                             (color,)*_const.FRAME_DELAY for
                             color in colors+colors[::-1]))
 
-                    def __init__(self, pos, text, size, groups=None):
+                    def __init__(self, pos, string, size, groups=None):
                         u"""コンストラクタ。
                         """
                         self.__frame = 0
                         self.__set_char_color()
                         self.__is_flash = False
                         super(_Flashable, self).__init__(
-                            pos, text, size, self.__COLORS[self.__frame],
+                            pos, string, size, self.__COLORS[self.__frame],
                             groups=groups)
 
                     def update(self):
@@ -132,51 +132,53 @@ class ModeSelect(__content.Content):
                     content.is_flash = False
                 strings[self.__cursor].is_flash = True
         super(ModeSelect, self).__init__()
-        _sound.BGM.play("Menu")
+        _sound.BGM.play("menu")
         _Title()
         self._selector = _Selector(self.__MODES, self.__cursor)
         __image.BackGround.set_image(_misc.get("starry_sky"))
         __image.BackGround.transcribe(__screen.Screen.get_base())
-        self.__set_info()
+        self.__update_info()
+
+    def __update_info(self):
+        u"""情報更新。
+        """
+        endless = _inventories.Utils.get_endless()
+        endless_level = endless if endless < _const.ENDLESS_LIMIT else u"??"
+        streaks = u"/現在★:{}#".format(endless_level) if endless else u"#"
+        joystick = (
+            u"#" if _input.is_second_playable() else
+            u"/ジョイパッドが2つ必要です#")
+        description = (
+            u"{}:相手を選んで対戦#" +
+            u"{}:ランダムに連戦"+streaks +
+            u"{}:対人戦"+joystick +
+            u"{}:装備設定#" +
+            u"{}:セーブして終了").format(*self.__MODES.split("#")).split("#")
+        _sprites.Info.send((
+            u"{}#使用・削除キーでスピード変更#" +
+            _const.COPYRIGHT+u"#Version "+_const.VERSION
+        ).format(description[self._selector.cursor]))
 
     def eliminate(self):
         u"""全ての表示物を除去。
         """
         self._selector.eliminate()
 
-    def __set_info(self):
-        u"""情報設定。
-        """
-        endless = _inventory.Utils.get_endless()
-        endless_level = endless if endless < _const.ENDLESS_LIMIT else u"??"
-        streaks = u"/現在★:{}#".format(endless_level) if endless else u"#"
-        joystick = (
-            u"#" if _input.is_second_playable() else u"/ジョイパッドが2つ必要です#")
-        description = (
-            u"{}:相手を選んで対戦#" +
-            u"{}:ランダムに連戦"+streaks +
-            u"{}:対人戦"+joystick +
-            u"{}:装備設定#" +
-            u"{}:セーブして終了").format(*self.__MODES.split("#"))
-        _string.Info.send((
-            u"{}#使用・削除キーでスピード変更#"+_const.COPYRIGHT
-        ).format(description.split("#")[self._selector.cursor]))
-
     def delete(self):
         u"""削除キー入力。
         上下左右キーの速度調整。
         """
-        value = _inventory.Utils.get_speed()-1
-        _inventory.Utils.set_speed(0 if value < 0 else value)
+        value = _inventories.Utils.get_speed()-1
+        _inventories.Utils.set_speed(0 if value < 0 else value)
         return _const.IGNORE_STATUS
 
     def use(self):
         u"""使用キー入力。
         上下左右キーの速度調整。
         """
-        value = _inventory.Utils.get_speed()+1
+        value = _inventories.Utils.get_speed()+1
         limit = len(_const.SPEED_TEXTS)-1
-        _inventory.Utils.set_speed(value if value < limit else limit)
+        _inventories.Utils.set_speed(value if value < limit else limit)
         return _const.IGNORE_STATUS
 
     def up(self):
@@ -185,8 +187,8 @@ class ModeSelect(__content.Content):
         old_cursor = self._selector.cursor
         self._selector.cursor -= 1
         if self._selector.cursor != old_cursor:
-            _sound.SE.play("Cursor")
-        self.__set_info()
+            _sound.SE.play("cursor_1")
+        self.__update_info()
         return 0
 
     def down(self):
@@ -195,8 +197,8 @@ class ModeSelect(__content.Content):
         old_cursor = self._selector.cursor
         self._selector.cursor += 1
         if self._selector.cursor != old_cursor:
-            _sound.SE.play("Cursor")
-        self.__set_info()
+            _sound.SE.play("cursor_1")
+        self.__update_info()
         return 0
 
     def decision(self):
@@ -204,22 +206,22 @@ class ModeSelect(__content.Content):
         """
         cursor = self.__class__.__cursor = self._selector.cursor
         if cursor == 0:
-            _sound.SE.play("Decision")
+            _sound.SE.play("decision")
             return _const.DUEL_SELECT_STATUS
         elif cursor == 1:
-            _sound.SE.play("Decision")
+            _sound.SE.play("decision")
             return _const.ENDLESS_STATUS
         elif cursor == 2:
             if _input.is_second_playable():
-                _sound.SE.play("Decision")
+                _sound.SE.play("decision")
                 return _const.VERSUS_SELECT_STATUS
             else:
-                _sound.SE.play("Error")
+                _sound.SE.play("error")
                 return _const.IGNORE_STATUS
         elif cursor == 3:
-            _sound.SE.play("Decision")
+            _sound.SE.play("decision")
             return _const.CUSTOM_STATUS
         elif cursor == 4:
-            _inventory.save()
+            _inventories.save()
             return _const.EXIT_STATUS
         return _const.IGNORE_STATUS

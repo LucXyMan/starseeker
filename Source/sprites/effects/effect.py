@@ -2,15 +2,15 @@
 # -*- coding:UTF-8 -*-2
 u"""effect.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 エフェクトスプライトモジュール。
 """
-import pygame as _pygame
+import pygame as __pygame
 
 
-class Effect(_pygame.sprite.DirtySprite):
+class Effect(__pygame.sprite.DirtySprite):
     u"""エフェクトスプライト。
     """
     @classmethod

@@ -2,67 +2,13 @@
 # -*- coding:UTF-8 -*-2
 u"""decorator.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 デコレータモジュール。
 ウィンドウなどの枠を設定する。
 """
 import pygame as _pygame
-
-
-class Decorator(_pygame.sprite.DirtySprite):
-    u"""デコレータ。
-    """
-    _ALPHA = 0x80
-    _DECORATOR_LINE_SIZE = 2
-    _BASE_COLORS = "0xD0D0D0", "0x606060", "0x202020"
-    _LIGHT_COLORS = "0xD0F0D0", "0xB0D0B0", "0x406040"
-
-    def __init__(self, caster, groups=None):
-        u"""コンストラクタ。
-        """
-        super(Decorator, self).__init__(
-            (Decorator.group, Decorator.draw_group) if groups is None else
-            tuple(groups))
-        self._caster = caster
-        self._base_image = self._get_image(False)
-        self._light_image = self._get_image(True)
-        self.image = self._base_image
-        self.rect = self.image.get_rect()
-        self.update()
-
-    def _get_horizon(self, is_light):
-        u"""水平ライン画像取得。
-        """
-        width = self._caster.rect.width
-        height = self._DECORATOR_LINE_SIZE
-        line_width = height >> 1
-        surf = _pygame.Surface((width, height))
-        light, _, dark = (
-            self._BASE_COLORS if is_light == 0 else self._LIGHT_COLORS)
-        _pygame.draw.line(
-            surf, _pygame.Color(light), (0, 0), (width, 0), line_width)
-        _pygame.draw.line(
-            surf, _pygame.Color(dark), (0, line_width), (width, line_width),
-            line_width)
-        return surf
-
-    def _get_vertical(self, is_light):
-        u"""垂直ライン画像取得。
-        """
-        width = self._DECORATOR_LINE_SIZE
-        height = self._caster.rect.height
-        line_width = width >> 1
-        surf = _pygame.Surface((width, height))
-        light, _, dark = (
-            self._BASE_COLORS if is_light == 0 else self._LIGHT_COLORS)
-        _pygame.draw.line(
-            surf, _pygame.Color(light), (0, 0), (0, height), line_width)
-        _pygame.draw.line(
-            surf, _pygame.Color(dark), (line_width, 0), (line_width, height),
-            line_width)
-        return surf
 
 
 def set_decorator(caster, groups=None):
@@ -162,10 +108,12 @@ def set_decorator(caster, groups=None):
         def _get_image(self, is_light):
             u"""角部画像を取得。
             """
-            surf = _pygame.Surface(
-                (self._DECORATOR_LINE_SIZE, self._DECORATOR_LINE_SIZE))
+            surf = _pygame.Surface((
+                self._DECORATOR_LINE_SIZE,
+                self._DECORATOR_LINE_SIZE))
             light, mid, dark = (
-                self._BASE_COLORS if is_light == 0 else self._LIGHT_COLORS)
+                self._BASE_COLORS if is_light == 0 else
+                self._LIGHT_COLORS)
             surf.fill(_pygame.Color(mid))
             _pygame.draw.rect(
                 surf, _pygame.Color(light), _pygame.Rect(0, 0, 0, 0))
@@ -244,8 +192,64 @@ def set_decorator(caster, groups=None):
                 self.rect.topleft = self._caster.rect.bottomright
             else:
                 self.kill()
-    for Cls in (
+    for Decorator_ in (
         __Top, __TopRight, __Right, __BottomRight,
         __Bottom, __BottomLeft, __Left, __TopLeft
     ):
-        Cls(caster, groups)
+        Decorator_(caster, groups)
+
+
+class Decorator(_pygame.sprite.DirtySprite):
+    u"""デコレータ。
+    """
+    _ALPHA = 0x80
+    _DECORATOR_LINE_SIZE = 2
+    _BASE_COLORS = "0xD0D0D0", "0x606060", "0x202020"
+    _LIGHT_COLORS = "0xD0F0D0", "0xB0D0B0", "0x406040"
+
+    def __init__(self, caster, groups=None):
+        u"""コンストラクタ。
+        """
+        super(Decorator, self).__init__(
+            (Decorator.group, Decorator.draw_group) if groups is None else
+            tuple(groups))
+        self._caster = caster
+        self._base_image = self._get_image(False)
+        self._light_image = self._get_image(True)
+        self.image = self._base_image
+        self.rect = self.image.get_rect()
+        self.update()
+
+    def _get_horizon(self, is_light):
+        u"""水平ライン画像取得。
+        """
+        width = self._caster.rect.width
+        height = self._DECORATOR_LINE_SIZE
+        line_width = height >> 1
+        surf = _pygame.Surface((width, height))
+        light, _, dark = (
+            self._BASE_COLORS if is_light == 0 else
+            self._LIGHT_COLORS)
+        _pygame.draw.line(
+            surf, _pygame.Color(light), (0, 0), (width, 0), line_width)
+        _pygame.draw.line(
+            surf, _pygame.Color(dark), (0, line_width),
+            (width, line_width), line_width)
+        return surf
+
+    def _get_vertical(self, is_light):
+        u"""垂直ライン画像取得。
+        """
+        width = self._DECORATOR_LINE_SIZE
+        height = self._caster.rect.height
+        line_width = width >> 1
+        surf = _pygame.Surface((width, height))
+        light, _, dark = (
+            self._BASE_COLORS if is_light == 0 else
+            self._LIGHT_COLORS)
+        _pygame.draw.line(
+            surf, _pygame.Color(light), (0, 0), (0, height), line_width)
+        _pygame.draw.line(
+            surf, _pygame.Color(dark), (line_width, 0),
+            (line_width, height), line_width)
+        return surf

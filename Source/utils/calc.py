@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""calc.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 汎用計算モジュール。

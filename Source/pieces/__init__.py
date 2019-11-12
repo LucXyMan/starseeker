@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""pieces.__init__.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 ピースパッケージ。
@@ -26,6 +26,4 @@ Dropping = __operate.Dropping
 def init():
     u"""パッケージ初期化。
     """
-    import cells as __cells
-    __cells.init()
     __config.init()

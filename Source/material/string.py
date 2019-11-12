@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""string.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 文字列画像モジュール。
@@ -120,11 +120,11 @@ class ElmCharColor(object):
         __set_dark_char_colors()
 
     @classmethod
-    def get(cls, number, dark=False):
+    def get(cls, number, is_dark=False):
         u"""文字色取得。
         """
         return (
-            cls.__DARK_CHAR_COLORS[number] if dark else
+            cls.__DARK_CHAR_COLORS[number] if is_dark else
             cls.__CHAR_COLORS[number])
 
 
@@ -137,25 +137,25 @@ def init():
     ElmCharColor()
 
 
-def get_string(text, size, color=None, shorten=True):
+def get_string(string, size, color=None, shorten=True):
     u"""文字列画像取得。
     """
     import utils.memoize as __memoize
 
     @__memoize.memoize()
-    def __get_gradient_char(text, size, color):
+    def __get_gradient_char(string, size, color):
         u"""グラデーション文字列画像取得。
         """
         @__memoize.memoize()
-        def __get_shadow_char(text, size, color):
+        def __get_shadow_char(string, size, color):
             u"""影付き文字列画像取得。
             """
             @__memoize.memoize()
-            def __get_char(text, size, color):
+            def __get_char(string, size, color):
                 u"""文字列画像取得。
                 """
                 return _pygame.font.Font(
-                    __source, size).render(text, False, color.start)
+                    __source, size).render(string, False, color.start)
 
             def __color_to_string(color):
                 u"""色情報を文字列に変換する。
@@ -169,27 +169,27 @@ def get_string(text, size, color=None, shorten=True):
             back_bottom = _pygame.Color("0xFFFFFF")
             back_bottom.hsva = tuple(int(c) for c in (h, s, v*0.75, a))
             font = __get_char(
-                text, size, CharColor(__color_to_string(color.back)+"##"))
+                string, size, CharColor(__color_to_string(color.back)+"##"))
             font_size = font.get_size()
             image = _pygame.Surface((font_size[0]+2, font_size[1]+2))
             image.set_colorkey(_pygame.Color("0x000000"))
             for pos in ((0, 0), (1, 0), (2, 0)):
                 image.blit(font, pos)
             font = __get_char(
-                text, size, CharColor(__color_to_string(back_bottom)+"##"))
+                string, size, CharColor(__color_to_string(back_bottom)+"##"))
             for pos in ((0, 2), (1, 2), (2, 2)):
                 image.blit(font, pos)
-            font = __get_char(text, size, CharColor(
+            font = __get_char(string, size, CharColor(
                 __color_to_string(back_mid)+"##"))
             for pos in ((0, 1), (2, 1)):
                 image.blit(font, pos)
             image.blit(
-                __get_char(text, size, CharColor(
+                __get_char(string, size, CharColor(
                     color.start_string+"##")), (1, 1))
             return image
         color_key = "0xFFFFFF"
         sc = __get_shadow_char(
-            text, size, CharColor(color_key+"##"+color.back_string))
+            string, size, CharColor(color_key+"##"+color.back_string))
         surf = _pygame.Surface(sc.get_size())
         surf.blit(sc, (0, 0))
         surf.set_colorkey(_pygame.Color(color_key))
@@ -200,16 +200,16 @@ def get_string(text, size, color=None, shorten=True):
         surf.blit(gradient, (0, 0))
         surf.set_colorkey(_pygame.Color("0x000000"))
         return surf
-    if text:
+    if string:
         values = []
         color = color if color else CharColor()
-        for c in text:
+        for c in string:
             img = __get_gradient_char(c, size, color)
             values.append((img, img.get_size()))
         m = max(h for _, (_, h) in values)
         surf = _pygame.Surface((
             sum(w for _, (w, _) in values) if shorten else
-            (size+2)*len(text), m))
+            (size+2)*len(string), m))
         surf.set_colorkey(_pygame.Color("0x000000"))
         x = 0
         for i, (img, (w, h)) in enumerate(values):

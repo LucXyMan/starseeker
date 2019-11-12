@@ -2,15 +2,16 @@
 # -*- coding:UTF-8 -*-2
 u"""controler.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 コントローラモジュール。
 """
+import io as _io
 import pygame as _pygame
 import pygame.joystick as _joystick
 import pygame.key as _key
-import sprites.string as _string
+import sprites as _sprites
 import utils.const as _const
 
 
@@ -18,63 +19,63 @@ def init():
     u"""初期化処理。
     """
     import os as __os
-    config_dir = __os.path.join(
-        __os.path.expanduser("~"), ".config", "starseeker", )
+    import inventories as __inventories
+    config_dir = __inventories.get_config_dir()
     _Controler.config_file = __os.path.join(config_dir, "keyconf.txt")
     if not __os.path.exists(_Controler.config_file):
         if not __os.path.exists(config_dir):
             __os.makedirs(config_dir, mode=0o775)
-        with open(_Controler.config_file, "w") as out:
+        with _io.open(_Controler.config_file, "w") as out:
             out.write(
-                "# キーコンフィグ\n"
-                "\n"
-                "# キーボード設定\n"
-                "# 参照: https://www.pygame.org/docs/ref/key.html\n"
-                "UP_KEY = K_w, K_UP\n"
-                "RIGHT_KEY = K_d, K_RIGHT\n"
-                "LEFT_KEY = K_a, K_LEFT\n"
-                "DOWN_KEY = K_s, K_DOWN\n"
-                "DECISION_KEY = K_l\n"
-                "CANCEL_KEY = K_k\n"
-                "HOLD_KEY = K_i\n"
-                "REMOVE_KEY = K_j\n"
-                "DELETE_KEY = K_q\n"
-                "USE_KEY = K_e\n"
-                "SELECT_KEY = K_BACKSPACE\n"
-                "START_KEY = K_SPACE\n"
-                "USE1_KEY = K_1\n"
-                "USE2_KEY = K_2\n"
-                "USE3_KEY = K_3\n"
-                "USE4_KEY = K_4\n"
-                "USE5_KEY = K_5\n"
-                "USE6_KEY = K_6\n"
-                "USE7_KEY = K_7\n"
-                "USE8_KEY = K_8\n"
-                "VOLUMEUP_KEY = K_SEMICOLON, K_KP_PLUS\n"
-                "VOLUMEDOWN_KEY = K_MINUS, K_KP_MINUS\n"
-                "MUTE_KEY = K_SLASH, K_KP_DIVIDE\n"
-                "\n"
-                "# ジョイパッド設定\n"
-                "# 0~7の番号で設定してください\n"
-                "# 1P設定\n"
-                "DECISION_BUTTON_1P = 0\n"
-                "CANCEL_BUTTON_1P = 1\n"
-                "HOLD_BUTTON_1P = 2\n"
-                "REMOVE_BUTTON_1P = 3\n"
-                "DELETE_BUTTON_1P = 4\n"
-                "USE_BUTTON_1P = 5\n"
-                "SELECT_BUTTON_1P = 6\n"
-                "START_BUTTON_1P = 7\n"
-                "# 2P設定\n"
-                "DECISION_BUTTON_2P = 0\n"
-                "CANCEL_BUTTON_2P = 1\n"
-                "HOLD_BUTTON_2P = 2\n"
-                "REMOVE_BUTTON_2P = 3\n"
-                "DELETE_BUTTON_2P = 4\n"
-                "USE_BUTTON_2P = 5\n"
-                "SELECT_BUTTON_2P = 6\n"
-                "START_BUTTON_2P = 7\n"
-                "\n")
+                u"# キーコンフィグ\n"
+                u"\n"
+                u"# キーボード設定\n"
+                u"# 参照: https://www.pygame.org/docs/ref/key.html\n"
+                u"UP_KEY = K_w, K_UP\n"
+                u"RIGHT_KEY = K_d, K_RIGHT\n"
+                u"LEFT_KEY = K_a, K_LEFT\n"
+                u"DOWN_KEY = K_s, K_DOWN\n"
+                u"DECISION_KEY = K_l\n"
+                u"CANCEL_KEY = K_k\n"
+                u"HOLD_KEY = K_i\n"
+                u"REMOVE_KEY = K_j\n"
+                u"DELETE_KEY = K_q\n"
+                u"USE_KEY = K_e\n"
+                u"SELECT_KEY = K_BACKSPACE\n"
+                u"START_KEY = K_SPACE\n"
+                u"USE1_KEY = K_1\n"
+                u"USE2_KEY = K_2\n"
+                u"USE3_KEY = K_3\n"
+                u"USE4_KEY = K_4\n"
+                u"USE5_KEY = K_5\n"
+                u"USE6_KEY = K_6\n"
+                u"USE7_KEY = K_7\n"
+                u"USE8_KEY = K_8\n"
+                u"VOLUMEUP_KEY = K_SEMICOLON, K_KP_PLUS\n"
+                u"VOLUMEDOWN_KEY = K_MINUS, K_KP_MINUS\n"
+                u"MUTE_KEY = K_SLASH, K_KP_DIVIDE\n"
+                u"\n"
+                u"# ジョイパッド設定\n"
+                u"# 0~7の番号で設定してください\n"
+                u"# 1P設定\n"
+                u"DECISION_BUTTON_1P = 0\n"
+                u"CANCEL_BUTTON_1P = 1\n"
+                u"HOLD_BUTTON_1P = 2\n"
+                u"REMOVE_BUTTON_1P = 3\n"
+                u"DELETE_BUTTON_1P = 4\n"
+                u"USE_BUTTON_1P = 5\n"
+                u"SELECT_BUTTON_1P = 6\n"
+                u"START_BUTTON_1P = 7\n"
+                u"# 2P設定\n"
+                u"DECISION_BUTTON_2P = 0\n"
+                u"CANCEL_BUTTON_2P = 1\n"
+                u"HOLD_BUTTON_2P = 2\n"
+                u"REMOVE_BUTTON_2P = 3\n"
+                u"DELETE_BUTTON_2P = 4\n"
+                u"USE_BUTTON_2P = 5\n"
+                u"SELECT_BUTTON_2P = 6\n"
+                u"START_BUTTON_2P = 7\n"
+                u"\n")
 
 
 def is_second_playable():
@@ -87,7 +88,7 @@ class _Controler(object):
     u"""入出力制御。
     """
     __slots__ = (
-        "_added", "__buttons", "__keyboard", "__interval",
+        "_added", "__buttons", "__keyboard", "__id", "__interval",
         "__is_init_error", "__is_input_error", "__is_keyboard_useable",
         "_joystick", "__presseds", "__pressure", "__queue", "__speed")
     _DECISION = "DECISION"
@@ -124,7 +125,7 @@ class _Controler(object):
     def __init__(self, id_):
         u"""コンストラクタ。
         """
-        import inventory as __inventory
+        import inventories as __inventories
 
         def __set_keys():
             u"""キー設定。
@@ -144,26 +145,26 @@ class _Controler(object):
                             except AttributeError:
                                 pass
                             if set_key in self.__CORRECT_WORD:
-                                self.__keyboard[set_key.upper()] = \
+                                self.__keyboard[set_key.upper()] =\
                                     tuple(result)
                     else:
                         value_type, player = value_type.split("_")
                         if value_type.upper() == "BUTTON":
                             if set_key in self.__CORRECT_WORD:
                                 try:
-                                    if id_ == 0 and player == "1P":
-                                        self.__buttons[set_key.upper()] = \
+                                    if self.__id == 0 and player == "1P":
+                                        self.__buttons[set_key.upper()] =\
                                             int(values)
-                                    elif id_ == 1 and player == "2P":
-                                        self.__buttons[set_key.upper()] = \
+                                    elif self.__id == 1 and player == "2P":
+                                        self.__buttons[set_key.upper()] =\
                                             int(values)
                                 except ValueError:
                                     pass
             try:
-                with open(_Controler.config_file, "r") as out:
+                with _io.open(_Controler.config_file, "r") as out:
                     for line in out:
                         __parse()
-            except IOError:
+            except (IOError, UnicodeDecodeError):
                 pass
             for key, value in (
                 (self._DECISION, (_pygame.K_l,)),
@@ -200,22 +201,23 @@ class _Controler(object):
             ):
                 if key not in self.__buttons:
                     self.__buttons[key] = value
+        self.__id = id_
         self.__queue = ""
         self._added = ""
         self.__presseds = ""
         self.__keyboard = {}
         self.__buttons = {}
-        self.__speed = __inventory.Utils.get_speed()+1
+        self.__speed = __inventories.Utils.get_speed()+1
         self.__interval = _const.FRAME_RATE >> 1
         self.__pressure = 0
         self.__is_keyboard_useable = True
         if _joystick.get_count():
-            self._joystick = _joystick.Joystick(id_)
+            self._joystick = _joystick.Joystick(self.__id)
             try:
                 self._joystick.init()
                 self.__is_init_error = False
             except _pygame.error:
-                _string.Info.send(
+                _sprites.Info.send(
                     "CONTROLER INITIALIZE ERROR", is_warning=True)
                 self.__is_init_error = True
         __set_keys()
@@ -226,8 +228,8 @@ class _Controler(object):
         """
         if decision:
             if added not in self.__presseds:
-                self.__queue = self.__queue+added
-                self.__presseds = self.__presseds+added
+                self.__queue += added
+                self.__presseds += added
         else:
             self.__presseds = self.__presseds.replace(added, "")
 
@@ -253,8 +255,8 @@ class _Controler(object):
                 elif is_left:
                     self._added = self._added+_const.LEFT_COMMAND
 
-        def __button_input():
-            u"""ジョイスティック入力。
+        def __key_input():
+            u"""キー・ジョイスティック入力。
             """
             pressed = _key.get_pressed()
             for key, command in (
@@ -277,39 +279,35 @@ class _Controler(object):
             ):
                 try:
                     has_key = _joystick.get_count() and key in self.__buttons
-                    is_button_pressed = \
-                        self._joystick.get_button(self.__buttons[key]) if \
-                        has_key else False
+                    is_button_pressed = (
+                        self._joystick.get_button(self.__buttons[key]) if
+                        has_key else False)
                     self._add_command(
                         self._is_pressed(pressed, key) or
                         is_button_pressed, command)
                 except _pygame.error:
                     if not self.__is_input_error:
                         self.__is_input_error = True
-                        _string.Info.send(
+                        _sprites.Info.send(
                             "CONTROLER INPUT ERROR", is_warning=True)
 
         def __volume_input():
             u"""ボリューム入力。
             """
-            pressed = _key.get_pressed()
-            if not (
-                any(pressed[key] for
-                    key in self.__keyboard[self._VOLUMEUP]) and
-                any(pressed[key] for key in self.__keyboard[self._VOLUMEDOWN])
-            ):
-                if any(
-                    pressed[key] for
-                    key in self.__keyboard[self._VOLUMEUP]
-                ):
-                    self._added = self._added+_const.VOLUMEUP_COMMAND
-                elif any(
-                    pressed[key] for
-                    key in self.__keyboard[self._VOLUMEDOWN]
-                ):
-                    self._added = self._added+_const.VOLUMEDOWN_COMMAND
-            if any(pressed[key] for key in self.__keyboard[self._MUTE]):
-                self._added = self._added+_const.MUTE_COMMAND
+            if self.__id == 0:
+                pressed = _key.get_pressed()
+                volume_up = any(
+                    pressed[key] for key in self.__keyboard[self._VOLUMEUP])
+                volume_down = any(
+                    pressed[key] for key in self.__keyboard[self._VOLUMEDOWN])
+                if not (volume_up and volume_down):
+                    if volume_up:
+                        self._added += _const.VOLUMEUP_COMMAND
+                    elif volume_down:
+                        self._added += _const.VOLUMEDOWN_COMMAND
+                self._add_command(
+                    any(pressed[key] for key in self.__keyboard[self._MUTE]),
+                    _const.MUTE_COMMAND)
 
         def __shift():
             u"""キーを押した時の変速処理。
@@ -330,7 +328,7 @@ class _Controler(object):
             round(self._joystick.get_axis(0)) if is_joystick else 0)
         self._y_axis_input(
             round(self._joystick.get_axis(1)) if is_joystick else 0)
-        __button_input()
+        __key_input()
         __volume_input()
         __shift()
 

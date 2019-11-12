@@ -2,19 +2,19 @@
 # -*- coding:UTF-8 -*-2
 u"""window.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 メニューウィンドウモジュール。
 """
 import pygame as _pygame
 import material.sound as _sound
-import sprites.window as _window
+import sprites as _sprites
 import utils.const as _const
 import utils.image as _image
 
 
-class _Display(_window.Window):
+class _Display(_sprites.Window):
     u"""表示ウィンドウ。
     """
     _SCROLL_SPEED = 4
@@ -38,54 +38,54 @@ class _Display(_window.Window):
         self._is_active = False
         self._is_motion = False
 
-    def _scroll(self):
-        u"""ウィンドウのスクロール処理。
-        """
-        motion = False
-        if self._cursor_rect.left < self._area.left:
-            self._area.x -= self._SCROLL_SPEED
-            motion = True
-        elif self._area.right < self._cursor_rect.right:
-            self._area.x += self._SCROLL_SPEED
-            motion = True
-        if self._cursor_rect.top < self._area.top:
-            self._area.y -= self._SCROLL_SPEED
-            motion = True
-        elif self._area.bottom < self._cursor_rect.bottom:
-            self._area.y += self._SCROLL_SPEED
-            motion = True
-        if self._whole_rect.bottom < self._area.bottom:
-            self._area.bottom = self._whole_rect.height
-        self._is_motion = motion
-
-    def _light_up(self):
-        u"""デコレータの処理。
-        """
-        self._decorate = (
-            1 if self._area.top == 0 else 0,
-            1 if self._area.right == self._whole_rect.right else 0,
-            1 if self._area.bottom == self._whole_rect.bottom else 0,
-            1 if self._area.left == 0 else 0)
-
-    def _cursor_blit(self):
-        u"""カーソルの書き込み。
-        """
-        if self._is_light:
-            self._whole_image.blit(
-                self.__cursor_images[self._frame], self._cursor_rect.topleft)
-            if self._is_active:
-                self._frame += 1
-                if self._frame == self._FRAME_MUNBER:
-                    self._frame = 0
-
     def update(self):
         u"""ウィンドウの更新処理。
         """
+        def __scroll():
+            u"""ウィンドウのスクロール処理。
+            """
+            motion = False
+            if self._cursor_rect.left < self._area.left:
+                self._area.x -= self._SCROLL_SPEED
+                motion = True
+            elif self._area.right < self._cursor_rect.right:
+                self._area.x += self._SCROLL_SPEED
+                motion = True
+            if self._cursor_rect.top < self._area.top:
+                self._area.y -= self._SCROLL_SPEED
+                motion = True
+            elif self._area.bottom < self._cursor_rect.bottom:
+                self._area.y += self._SCROLL_SPEED
+                motion = True
+            if self._whole_rect.bottom < self._area.bottom:
+                self._area.bottom = self._whole_rect.height
+            self._is_motion = motion
+
+        def __light_up():
+            u"""デコレータの処理。
+            """
+            self._decorate = (
+                1 if self._area.top == 0 else 0,
+                1 if self._area.right == self._whole_rect.right else 0,
+                1 if self._area.bottom == self._whole_rect.bottom else 0,
+                1 if self._area.left == 0 else 0)
+
+        def __cursor_blit():
+            u"""カーソルの書き込み。
+            """
+            if self._is_light:
+                self._whole_image.blit(
+                    self.__cursor_images[self._frame],
+                    self._cursor_rect.topleft)
+                if self._is_active:
+                    self._frame += 1
+                    if self._frame == self._FRAME_MUNBER:
+                        self._frame = 0
         self._whole_image.blit(self._bg, (0, 0))
         self._item_blit()
-        self._scroll()
-        self._light_up()
-        self._cursor_blit()
+        __scroll()
+        __light_up()
+        __cursor_blit()
         self.image.blit(self._whole_image, (0, 0), self._area)
 
     @property
@@ -162,7 +162,7 @@ class Icon(_Display):
             y, x = divmod(self._cursor*_const.GRID, self._whole_rect.width)
             self._cursor_rect.topleft = x, y*_const.GRID
             if self._cursor != old_cursor:
-                _sound.SE.play("Cursor")
+                _sound.SE.play("cursor_1")
 
 
 class Label(_Display):
@@ -208,7 +208,7 @@ class Label(_Display):
                 self._cursor if pos < 0 or len(self._items)-1 < pos else pos)
             self._cursor_rect.topleft = 0, self._cursor*_const.GRID
             if self._cursor != old_cursor:
-                _sound.SE.play("Cursor")
+                _sound.SE.play("cursor_1")
 
     @property
     def is_label(self):

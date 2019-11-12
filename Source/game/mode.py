@@ -2,13 +2,12 @@
 # -*- coding:UTF-8 -*-2
 u"""mode.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 ゲームモードモジュール。
 """
 import pygame as _pygame
-import sprites.general as _general
 import utils.const as _const
 import utils.screen as _screen
 
@@ -18,35 +17,29 @@ def init():
     スプライトグループの設定など。
     """
     import armament.units as __units
-    import sprites.decorator as __decorator
+    import sprites as __sprites
     import sprites.effects as __effects
-    import sprites.indicator as __indicator
-    import sprites.shadow as __shadow
-    import sprites.string as __string
-    import sprites.window as __window
-    import system.battle as __battle
-    global _clock, _classes, _group, _arcanum_group, _effect_group
+    import sprites.huds as __huds
+    import systems.battle as __battle
+    global _card_group, _clock, _sprites, _group, _effect_group
     _clock = _pygame.time.Clock()
-    _classes = (
-        __shadow.Shadow,
+    _sprites = (
+        __sprites.Shadow,
         __units.Unit,
-        __indicator.Gauge,
-        __window.Window,
-        __decorator.Decorator,
-        _general.General,
-        __indicator.Star,
-        __indicator.Indicator,
-        __battle.Arcanum,
-        __string.String,
+        __sprites.Window,
+        __sprites.Decorator,
+        __huds.HUD,
+        __battle.Card,
+        __sprites.String,
         __effects.Effect)
     _group = _pygame.sprite.Group()
-    for Sprite in _classes:
+    for Sprite in _sprites:
         Sprite.group = _group
         Sprite.draw_group = _pygame.sprite.RenderUpdates()
-    __units.Unit.draw_group = __indicator.Gauge.draw_group = (
+    __units.Unit.draw_group = __huds.Gauge.draw_group = (
         _pygame.sprite.LayeredUpdates())
-    _arcanum_group = __battle.Arcanum.group = _pygame.sprite.Group()
-    __battle.Arcanum.draw_group = _pygame.sprite.LayeredUpdates()
+    _card_group = __battle.Card.group = _pygame.sprite.Group()
+    __battle.Card.draw_group = _pygame.sprite.LayeredUpdates()
     _effect_group = __effects.Effect.group = _pygame.sprite.Group()
 
 
@@ -61,7 +54,7 @@ class Mode(object):
         class __Fade(_pygame.sprite.DirtySprite):
             u"""フェード用画像。
             """
-            __FADE_SPEED = 4/_const.FRAME_DELAY << 4
+            __FADE_SPEED = _const.FRAME_DELAY << 2
 
             def __init__(self):
                 u"""コンストラクタ。
@@ -112,7 +105,7 @@ class Mode(object):
         self._fade = __Fade()
 
     def _expansion(self):
-        u"""メインサーフェスにベースサーフェスを拡大して描画。
+        u"""メインサーフェスにベースを拡大して描画。
         """
         main = _screen.Screen.get_main()
         main.blit(_pygame.transform.scale(
@@ -125,13 +118,13 @@ class Mode(object):
         import utils.image as __image
         __counter.forward()
         _group.update()
-        _arcanum_group.update()
+        _card_group.update()
         _effect_group.update()
         __image.BackGround.update()
         __image.BackGround.transcribe(_screen.Screen.get_base())
-        for sprite in _classes:
-            if hasattr(sprite, "draw_group"):
-                sprite.draw_group.draw(_screen.Screen.get_base())
+        for Sprite in _sprites:
+            if hasattr(Sprite, "draw_group"):
+                Sprite.draw_group.draw(_screen.Screen.get_base())
         self._fade.update()
         _screen.Screen.get_base().blit(
             self._fade.image, self._fade.rect.topleft)
@@ -147,14 +140,14 @@ class Mode(object):
 
     def loop(self):
         u"""ゲームループ。
-        '約'一秒で時間を更新。
+        約一秒で時間を更新。
         """
-        import inventory as __inventory
+        import inventories as __inventories
         import material.sound as __sound
         _clock.tick(_const.FRAME_RATE)
         self.__frame = self.__frame+1 & 0b111111
         if self.__frame == 0:
-            __inventory.Time.forward()
+            __inventories.Time.forward()
         events = _pygame.event.get()
         __sound.BGM.loop(events)
         return events
@@ -163,11 +156,12 @@ class Mode(object):
         u"""終了処理。
         """
         import utils.memoize as __memoize
-        for Sprite in _classes:
+        for Sprite in _sprites:
             for sprite in Sprite.group.sprites():
                 sprite.kill()
         __memoize.clear()
 
+    # ---- Property ----
     @property
     def _is_loopable(self):
         u"""ループ可能時に真。

@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""shadow.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 影スプライトモジュール。
@@ -39,11 +39,10 @@ class Shadow(_pygame.sprite.DirtySprite):
             u"""影画像キャッシュキー取得。
             """
             func, myself = args
-            return u"{method}##{name}##{power_up_level}##{is_right}".format(
+            return u"{method}##{name}##{level}##{is_right}".format(
                 method=u"{module}.{name}".format(
                     module=func.__module__, name=func.__name__),
-                name=myself.__caster.data.name,
-                power_up_level=myself.__caster.power_up_level,
+                name=myself.__caster.data.name, level=myself.__caster.level,
                 is_right=myself.__caster.is_right)
 
         @__memoize.memoize(get_key=__get_key)
@@ -55,9 +54,10 @@ class Shadow(_pygame.sprite.DirtySprite):
             for i in range(1, 5):
                 image = __image.copy(myself.__caster.base_image)
                 array = _pygame.PixelArray(image)
+                r, b, g = myself.__caster.level
                 color = _pygame.Color(*map(
-                    lambda x: 0xFF if 0xFF < x*(i << 0x04)+0x04 else
-                    x*(i << 0x04)+0x04, myself.__caster.power_up_level))
+                    lambda x: 0xFF if 0xFF < x*(i << 4)+0x04 else
+                    x*(i << 4)+0x04, (r, g, b)))
                 for x in range(len(array)):
                     for y in range(len(array[0])):
                         if array[x][y] != 0x000000:
@@ -70,7 +70,8 @@ class Shadow(_pygame.sprite.DirtySprite):
             images = images+images[::-1]
             return tuple(images)
         if self.__caster.alive():
-            self.image = __get_images(self)[__counter.get_frame(self.__FRAME)]
+            images = __get_images(self)
+            self.image = images[__counter.get_frame(self.__FRAME)]
             self.rect = self.image.get_rect()
             self.rect.midbottom = self.__caster.rect.midbottom
         else:

@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""image.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 画像ユーティリティモジュール。
@@ -11,11 +11,39 @@ import pygame as _pygame
 import const as _const
 import memoize as __memoize
 __memoize = __memoize.memoize
-__ALTITUDE = 16
-__ADD_PAINT_TYPE = 1
-__SUB_PAINT_TYPE = 2
-__AVE_PAINT_TYPE = 3
-__FILL_PAINT_TYPE = 4
+
+
+def load(filename):
+    u"""画像の読み込み。
+    ※二回目のロードはエラーになる。
+    """
+    image = _pygame.image.load(filename)
+    image.set_colorkey(_pygame.Color("0x000000"))
+    return image
+
+
+def copy(image):
+    u"""画像のコピーを返す。
+    Surface.copy()よりも軽い。
+    """
+    surf = _pygame.Surface(image.get_size())
+    surf.blit(image, (0, 0))
+    surf.set_colorkey(image.get_colorkey())
+    return surf
+
+
+def set_colorkey(image, colorkey):
+    u"""imageのカラーキーを文字列で設定。
+    """
+    image.set_colorkey(_pygame.Color(colorkey))
+
+
+def get_dummy():
+    u"""ダミー画像取得。
+    """
+    surf = _pygame.Surface((0, 0))
+    surf.set_colorkey(_pygame.Color(0x000000))
+    return surf
 
 
 class BackGround(object):
@@ -60,17 +88,12 @@ class BackGround(object):
                 cls.__switch.set_alpha(alpha)
 
 
-def load(filename):
-    u"""画像の読み込み。
-    ※二回目のロードはエラーになる。
-    """
-    image = _pygame.image.load(filename)
-    image.set_colorkey(_pygame.Color("0x000000"))
-    return image
+# ---- Process ----
+__ALTITUDE = 16
 
 
 def segment(source, division, grid=(16, 16), adjust=(0, 0)):
-    u"""画像の分割処理。
+    u"""画像分割処理。
     """
     def __split(source, rect):
         u"""画像の切り取り処理。
@@ -81,24 +104,13 @@ def segment(source, division, grid=(16, 16), adjust=(0, 0)):
         surf.set_colorkey(source.get_colorkey())
         surf.blit(source, (0, 0), rect)
         return surf
-    return [
-        __split(source, _pygame.Rect(
-            grid[0]*x+adjust[0], grid[1]*y+adjust[1], grid[0], grid[1]
-        )) for y in range(division[1]) for x in range(division[0])]
+    return tuple(__split(source, _pygame.Rect(
+        grid[0]*x+adjust[0], grid[1]*y+adjust[1], grid[0], grid[1]
+    )) for y in range(division[1]) for x in range(division[0]))
 
 
-def copy(image):
-    u"""画像のコピーを返す。
-    Surface.copy()よりも軽い。
-    """
-    surf = _pygame.Surface(image.get_size())
-    surf.blit(image, (0, 0))
-    surf.set_colorkey(image.get_colorkey())
-    return surf
-
-
-def get_other_color(image, rotate, size=16):
-    u"""imageの色違いを取得。
+def get_another_color(image, rotate, size=16):
+    u"""色違い画像取得。
     rotateが0の場合、元の画像と同じになる。
     """
     import collections as __collections
@@ -111,18 +123,26 @@ def get_other_color(image, rotate, size=16):
     return image
 
 
-def set_colorkey(image, colorkey):
-    u"""imageのカラーキーを文字列で設定。
+def get_flying(image):
+    u"""飛行クリーチャー画像取得。
     """
-    image.set_colorkey(_pygame.Color(colorkey))
+    def __get_change_size(image, size):
+        u"""サイズを変更した画像を取得。
+        """
+        colorkey = image.get_colorkey()
+        surf = _pygame.Surface(size)
+        surf.blit(image, (0, 0))
+        surf.set_colorkey(colorkey)
+        return surf
+    w, h = image.get_size()
+    return __get_change_size(image, (w, h+__ALTITUDE))
 
 
-def get_clear(image):
-    u"""imageの透明画像を取得。
-    """
-    surf = _pygame.Surface(image.get_size())
-    surf.set_colorkey((0, 0, 0))
-    return surf
+# ---- Get Colored ----
+__ADD_PAINT_TYPE = 1
+__SUB_PAINT_TYPE = 2
+__AVE_PAINT_TYPE = 3
+__FILL_PAINT_TYPE = 4
 
 
 def __get_colored(image, color, type_):
@@ -169,10 +189,10 @@ def __get_colored(image, color, type_):
         """
         return rgb
     array = _pygame.PixelArray(copy(image))
-    color = int(color, 16)
-    red = (color & 0xFF0000) >> 16
-    green = (color & 0x00FF00) >> 8
-    blue = (color & 0x0000FF)
+    color = int(color.strip("L"), 16)
+    red = int(color & 0xFF0000) >> 16
+    green = int(color & 0x00FF00) >> 8
+    blue = int(color & 0x0000FF)
     for x in range(len(array)):
             for y in range(len(array[0])):
                 if array[x][y] != 0x000000:
@@ -216,29 +236,15 @@ def get_dull(image):
     return __get_colored(image, _const.GRAY, __AVE_PAINT_TYPE)
 
 
-def get_dummy():
+def get_clear(image):
     u"""透明画像取得。
     """
-    surf = _pygame.Surface((0, 0))
-    surf.set_colorkey(_pygame.Color(0x000000))
+    surf = _pygame.Surface(image.get_size())
+    surf.set_colorkey((0, 0, 0))
     return surf
 
 
-def get_flying(image):
-    u"""飛行クリチャー画像取得。
-    """
-    def __get_change_size(image, size):
-        u"""サイズを変更した画像を取得。
-        """
-        colorkey = image.get_colorkey()
-        surf = _pygame.Surface(size)
-        surf.blit(image, (0, 0))
-        surf.set_colorkey(colorkey)
-        return surf
-    w, h = image.get_size()
-    return __get_change_size(image, (w, h+__ALTITUDE))
-
-
+# ---- Gradient ----
 def __get_gradient_color(color, length):
     u"""グラデーションカラー取得。
     """
@@ -277,6 +283,7 @@ def get_gradient(size, color, vertical):
     return surf
 
 
+# ---- Checkered ----
 @__memoize()
 def get_checkered(col, row, pattern=0):
     u"""白黒チェック画像を取得。

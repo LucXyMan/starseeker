@@ -2,17 +2,17 @@
 # -*- coding:UTF-8 -*-2
 u"""skill.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 スキルデータモジュール。
 """
-import inventory as _inventory
+import inventories as _inventories
 import utils.const as _const
 _IMPOSSIBLE_CATEGORY = u"取得不可"
 _UNACQUIRED_CATEGORY = u"未取得"
 _ACQUIRED_CATEGORY = u"取得"
-_ACTION_CATEGORY = u"アクション"
+_BLOCK_CATEGORY = u"ブロック"
 _SORCERY_CATEGORY = u"ソーサリー"
 _STAR_CATEGORY = u"スター"
 _SPECIAL_CATEGORY = u"スペシャル"
@@ -73,8 +73,8 @@ class _Skill(object):
         """
         return (
             u"<{name}: {category}, number={number}, slot={slot}>").format(
-                name=self.name, category=self.category, number=self.number,
-                slot=self.slot)
+            name=self.name, category=self.category, number=self.number,
+            slot=self.slot)
 
     def get_info(self):
         u"""情報の取得。
@@ -83,7 +83,7 @@ class _Skill(object):
             name=self.name, slot=self.__slot, desc=self.desc,
             end=u"#決定キーで装備・解除" if self.is_equippable else u""
         ) if self.is_equippable else u"{name}/取得まで★:{levels}必要".format(
-            name=self.name, levels=self.__levels-_inventory.Level.get_wins())
+            name=self.name, levels=self.__levels-_inventories.Level.get_wins())
 
     @property
     def number(self):
@@ -97,13 +97,14 @@ class _Skill(object):
         """
         import material.icon as __icon
         return (
-            __icon.get(0, 0, 0) if self.category == _IMPOSSIBLE_CATEGORY else
-            __icon.get(1, 0, (
-                6 if self.category == _ACTION_CATEGORY else
+            __icon.get(0x000) if self.category == _IMPOSSIBLE_CATEGORY else
+            __icon.get(0x100 | (
+                6 if self.category == _BLOCK_CATEGORY else
                 4 if self.category == _SORCERY_CATEGORY else
                 5 if self.category == _STAR_CATEGORY else
                 3 if self.category == _SPECIAL_CATEGORY else
-                8 if self.category == _UNACQUIRED_CATEGORY else 2)))
+                8 if self.category == _UNACQUIRED_CATEGORY else
+                2)))
 
     @property
     def category(self):
@@ -142,7 +143,7 @@ class _Skill(object):
     def is_equippable(self):
         u"""装備可能判定。
         """
-        return self.__levels <= _inventory.Level.get_wins()
+        return self.__levels <= _inventories.Level.get_wins()
 
 
 def init():
@@ -152,130 +153,52 @@ def init():
         _Skill(_IMPOSSIBLE_CATEGORY+u"##覚えられない", 0, 0),
         _Skill(_UNACQUIRED_CATEGORY+u"#未取得#覚えていない", 0, 0),
         _Skill(_ACQUIRED_CATEGORY+u"#取得#覚えている", 0, 0),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.FIRE_EATER_SKILL_NAME +
-            u"#マグマを破壊する", 1, 9),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.ICE_PICKER_SKILL_NAME +
-            u"#アイスを破壊する", 1, 9),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.ACID_ERASER_SKILL_NAME +
-            u"#アシッドを破壊する", 1, 9),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.STONE_BREAKER_SKILL_NAME +
-            u"#ストーンを破壊する", 1, 20),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.POWER_STROKE_SKILL_NAME +
-            u"#硬いブロックを一撃で破壊する", 3, 19),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.EXORCIST_SKILL_NAME +
-            u"#デーモン・ゴーストを除去する", 2, 19),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.PHANTOM_THIEF_SKILL_NAME +
-            u"#宝箱をカギ無しで開ける", 4, 29),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.VAMPIRE_SKILL_NAME +
-            u"#直接攻撃で相手のスターを吸収する", 6, 20),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.ROB_CARD_SKILL_NAME +
-            u"#直接攻撃で相手のカードを強奪する", 3, 20),
-        _Skill(
-            _ACTION_CATEGORY+u"#"+_const.COMPLETE_ASSIST_SKILL_NAME +
-            u"#ライン補完に必要なブロック-1",
-            8, 31),
-        _Skill(
-            _SORCERY_CATEGORY+u"#"+_const.PURIFY_SKILL_NAME +
-            u"#ジョーカーを削除できる", 5, 30),
-        _Skill(
-            _SORCERY_CATEGORY+u"#"+_const.DOUBLE_SPELL_SKILL_NAME +
-            u"#連続でサモン・ソーサリーを使用できる", 1, 10),
-        _Skill(
-            _SORCERY_CATEGORY+u"#"+_const.SOUL_EAT_SKILL_NAME +
-            u"#カード削除時にスター増加", 7, 29),
-        _Skill(
-            _SORCERY_CATEGORY+u"#"+_const.REVERSE_SORCERY_SKILL_NAME +
-            u"#ソーサリー効果逆転", 2, 10),
-        _Skill(
-            _SORCERY_CATEGORY+u"#"+_const.ANTI_SUMMONING_SKILL_NAME +
-            u"#シールドカードに召喚封印効果追加", 4, 28),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.SHEPHERD_SKILL_NAME +
-            u"#"+_const.BEAST_TRIBE+u"クリーチャーコスト減少", 2, 11),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.FALCONER_SKILL_NAME +
-            u"#"+_const.SKY_TRIBE+u"クリーチャーコスト減少", 2, 12),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.ALCHMIST_SKILL_NAME +
-            u"#"+_const.ALCHMIC_TRIBE+u"クリーチャーコスト減少", 2, 13),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.NECROMANCER_SKILL_NAME +
-            u"#"+_const.UNDEAD_TRIBE+u"クリーチャーコスト減少", 2, 14),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.DRAGON_MASTER_SKILL_NAME+u"#" +
-            _const.DRAGON_TRIBE+u"クリーチャーコスト減少/敵専用", 0, 0),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.HALF_JUPITER_SKILL_NAME +
-            u"#木スターコスト減少", 3, 21),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.HALF_MARS_SKILL_NAME +
-            u"#火スターコスト減少", 3, 22),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.HALF_SATURN_SKILL_NAME +
-            u"#土スターコスト減少", 3, 23),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.HALF_VENUS_SKILL_NAME +
-            u"#金スターコスト減少", 3, 24),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.HALF_MERCURY_SKILL_NAME +
-            u"#水スターコスト減少", 3, 25),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.MOON_CHILD_SKILL_NAME +
-            u"#月スターコスト減少", 3, 26),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.SON_OF_SUN_SKILL_NAME +
-            u"#太陽スターコスト減少", 3, 27),
-        _Skill(
-            _STAR_CATEGORY+u"#"+_const.DARK_FORCE_SKILL_NAME +
-            u"#初期月スター追加+ブラックドラゴン追加/敵専用", 0, 0),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.SAFETY_SKILL_NAME +
-            u"#スター減少効果防止", 2, 9),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.LIFE_BOOST_SKILL_NAME +
-            u"#生命の欠片効果倍増", 3, 15),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.MIGHTY_SKILL_NAME +
-            u"#力の欠片効果倍増", 3, 16),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.TOUGHNESS_SKILL_NAME +
-            u"#守りの欠片効果倍増", 3, 17),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.SPEEDSTER_SKILL_NAME +
-            u"#速さの欠片効果倍増", 3, 18),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.SWORD_EQUIP_SKILL_NAME +
-            u"#"+_const.SWORD_CATEGORY+u"装備可能", 1, 1),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.WAND_EQUIP_SKILL_NAME +
-            u"#"+_const.WAND_CATEGORY+u"装備可能", 1, 2),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.HEAVY_EQUIP_SKILL_NAME +
-            u"#"+_const.HEAVY_CATEGORY+u"装備可能", 1, 3),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.MISSILE_EQUIP_SKILL_NAME +
-            u"#"+_const.MISSILE_CATEGORY+u"装備可能", 1, 4),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.HAT_EQUIP_SKILL_NAME +
-            u"#"+_const.HAT_CATEGORY+u"装備可能", 1, 5),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.HELMET_EQUIP_SKILL_NAME +
-            u"#"+_const.HELMET_CATEGORY+u"装備可能", 1, 6),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.ARMOR_EQUIP_SKILL_NAME +
-            u"#"+_const.ARMOR_CATEGORY+u"装備可能", 1, 7),
-        _Skill(
-            _SPECIAL_CATEGORY+u"#"+_const.ROBE_EQUIP_SKILL_NAME +
-            u"#"+_const.ROBE_CATEGORY+u"装備可能", 1, 8)))
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.FIRE_EATER_SKILL, 1, 9),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.ICE_PICKER_SKILL, 1, 10),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.ACID_ERASER_SKILL, 1, 11),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.STONE_BREAKER_SKILL, 1, 12),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.POWER_STROKE_SKILL, 1, 13),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.EXORCIST_SKILL, 2, 14),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.PHANTOM_THIEF_SKILL, 6, 32),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.WATER_PRESS_SKILL, 6, 31),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.CHOCOLATE_PRESS_SKILL, 5, 30),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.COMPLETE_ASSIST_SKILL, 8, 36),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.PURIFY_SKILL, 5, 35),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.DOUBLE_SPELL_SKILL, 1, 10),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.VAMPIRE_SKILL, 6, 21),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.ROB_CARD_SKILL, 5, 22),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.SOUL_EAT_SKILL, 7, 33),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.REVERSE_SORCERY_SKILL, 2, 10),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.ANTI_SUMMONING_SKILL, 5, 34),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.POISON_SUMMON_SKILL, 2, 22),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.FORCE_JOKER_SKILL, 0, 0),
+        _Skill(_STAR_CATEGORY+u"#"+_const.SHEPHERD_SKILL, 2, 14),
+        _Skill(_STAR_CATEGORY+u"#"+_const.FALCONER_SKILL, 2, 15),
+        _Skill(_STAR_CATEGORY+u"#"+_const.ALCHMIST_SKILL, 2, 16),
+        _Skill(_STAR_CATEGORY+u"#"+_const.NECROMANCER_SKILL, 2, 14),
+        _Skill(_STAR_CATEGORY+u"#"+_const.DRAGON_MASTER_SKILL, 2, 17),
+        _Skill(_STAR_CATEGORY+u"#"+_const.HALF_JUPITER_SKILL, 3, 23),
+        _Skill(_STAR_CATEGORY+u"#"+_const.HALF_MARS_SKILL, 3, 24),
+        _Skill(_STAR_CATEGORY+u"#"+_const.HALF_SATURN_SKILL, 3, 25),
+        _Skill(_STAR_CATEGORY+u"#"+_const.HALF_VENUS_SKILL, 3, 26),
+        _Skill(_STAR_CATEGORY+u"#"+_const.HALF_MERCURY_SKILL, 3, 27),
+        _Skill(_STAR_CATEGORY+u"#"+_const.MOON_CHILD_SKILL, 3, 28),
+        _Skill(_STAR_CATEGORY+u"#"+_const.SON_OF_SUN_SKILL, 3, 29),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.SAFETY_SKILL, 2, 9),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.TALISMAN_SKILL, 1, 10),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.SHORT_TURN_SKILL, 5, 32),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.LIFE_BOOST_SKILL, 3, 18),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.MIGHTY_SKILL, 3, 19),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.TOUGHNESS_SKILL, 3, 20),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.SPEEDSTER_SKILL, 3, 21),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.SWORD_EQUIP_SKILL, 1, 1),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.WAND_EQUIP_SKILL, 1, 2),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.HEAVY_EQUIP_SKILL, 1, 3),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.MISSILE_EQUIP_SKILL, 1, 4),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.HAT_EQUIP_SKILL, 1, 5),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.HELMET_EQUIP_SKILL, 1, 6),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.ARMOR_EQUIP_SKILL, 1, 7),
+        _Skill(_SPECIAL_CATEGORY+u"#"+_const.ROBE_EQUIP_SKILL, 1, 8)))
     if _const.IS_OUTPUT:
         for i, skill in enumerate(_Skill.get_collections()):
             print str(i)+":", unicode(skill)

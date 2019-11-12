@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""memoize.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 メモライズモジュール。

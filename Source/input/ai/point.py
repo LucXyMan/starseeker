@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""point.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 AIポイントモジュール。
@@ -16,16 +16,16 @@ class Point(object):
     __slots__ = (
         "__adjasent_spaces", "__after", "__avg_depth",
         "__block_above_of_holes", "__completions", "__goal_distance",
-        "__hole_prevention", "__is_t_spin_chance", "__is_hold",
+        "__hole_prevention", "__is_t_spin", "__is_hold",
         "__malignancy", "__max_depth", "__min_depth", "__smoothness",
         "__state", "__unlock")
 
-    def __init__(self, state, is_hold=False, is_t_spin_chance=False):
+    def __init__(self, state, is_hold=False, is_t_spin=False):
         u"""コンストラクタ。
         """
         self.__state = state
         self.__is_hold = bool(is_hold)
-        self.__is_t_spin_chance = bool(is_t_spin_chance)
+        self.__is_t_spin = bool(is_t_spin)
         self.__max_depth = 0
         self.__min_depth = 0
         self.__avg_depth = 0
@@ -41,10 +41,9 @@ class Point(object):
     def __repr__(self):
         u"""文字列表現取得。
         """
-        return (
-            u"<{name}  state:{state}, points:{points}>".format(
-                name=self.__class__.__name__, state=self.__state,
-                points=self.total))
+        return u"<{name}  state:{state}, points:{points}>".format(
+            name=self.__class__.__name__, state=self.__state,
+            points=self.total)
 
     def __lt__(self, other):
         u"""self < other.
@@ -94,7 +93,7 @@ class Point(object):
     @property
     def total(self):
         u"""合計点取得。
-        T-Spinチャンスの時に二倍に。
+        T-Spinの時に1.5倍に。
         """
         total = sum((
             self.__max_depth, self.__min_depth, self.__avg_depth,
@@ -102,8 +101,8 @@ class Point(object):
             self.__block_above_of_holes, self.__adjasent_spaces,
             self.__goal_distance, self.__malignancy, self.__unlock))
         return (
-            total << 1 if self.__is_t_spin_chance and
-            0 < self.__completions else total)
+            total+(total >> 1) if self.is_t_spin and
+            self.__completions else total)
 
     @property
     def state(self):
@@ -118,10 +117,10 @@ class Point(object):
         return self.__is_hold
 
     @property
-    def is_t_spin_chance(self):
-        u"""T-Spinチャンス判定取得。
+    def is_t_spin(self):
+        u"""T-Spin判定取得。
         """
-        return self.__is_t_spin_chance
+        return self.__is_t_spin
 
     @property
     def max_depth(self):
@@ -263,10 +262,10 @@ if __name__ == '__main__':
     b = Point(None)
     b.max_depth = 20
     b.completions = 1
-    c = Point(None, is_t_spin_chance=True)
+    c = Point(None, is_t_spin=True)
     c.max_depth = 15
     c.completions = 1
-    d = Point(None, is_t_spin_chance=True)
+    d = Point(None, is_t_spin=True)
     d.max_depth = 5
     d.completions = 1
     points = a, b, c, d

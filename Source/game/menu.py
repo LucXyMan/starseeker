@@ -2,14 +2,14 @@
 # -*- coding:UTF-8 -*-
 u"""menu.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 メニューモードモジュール。
 """
 import mode as __mode
-import ui.entry as _entry
-import ui.custom as _custom
+import ui.entries as _entries
+import ui.menu as _menu
 
 
 class _Menu(__mode.Mode):
@@ -71,7 +71,7 @@ class DuelEntry(_Menu):
         u"""コンストラクタ。
         """
         super(DuelEntry, self).__init__()
-        self._operate = _entry.Duel()
+        self._operate = _entries.Duel()
         self._info.has_time = True
         self._info.has_level = True
         self._info.has_player = True
@@ -86,13 +86,13 @@ class VersusEntry(_Menu):
         u"""コンストラクタ。
         """
         super(VersusEntry, self).__init__()
-        self._operate = _entry.Versus()
+        self._operate = _entries.Versus()
         self._info.has_time = True
         self._info.has_size = True
         self._info.has_player = True
 
 
-class Custom(_Menu):
+class Customize(_Menu):
     u"""カスタムモード。
     """
     __slots__ = ()
@@ -100,8 +100,8 @@ class Custom(_Menu):
     def __init__(self):
         u"""コンストラクタ。
         """
-        super(Custom, self).__init__()
-        self._operate = _custom.Custom()
+        super(Customize, self).__init__()
+        self._operate = _menu.Customize()
         self._info.has_time = True
         self._info.has_sp = True
         self._info.has_player = True
@@ -111,7 +111,7 @@ class Custom(_Menu):
         """
         import utils.const as __const
         if status == __const.EXIT_STATUS:
-            super(Custom, self)._switch(__const.MODE_SELECT_STATUS)
+            super(Customize, self)._switch(__const.MODE_SELECT_STATUS)
 
 
 class Result(_Menu):
@@ -123,7 +123,7 @@ class Result(_Menu):
         u"""コンストラクタ。
         """
         super(Result, self).__init__()
-        self._operate = _custom.Result()
+        self._operate = _menu.Result()
         self._info.has_time = True
         self._info.has_sp = True
         self._info.has_next_level = True

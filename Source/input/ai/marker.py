@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""marker.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 位置マーカー作成モジュール。
@@ -25,7 +25,7 @@ class Marker(object):
         self.__goal = goal
         self.__out = None
 
-    def marking(self):
+    def mark(self, is_t_spin):
         u"""位置マーカーリスト取得。
         """
         def __mark(cmds, founds):
@@ -35,8 +35,8 @@ class Marker(object):
                 u"""起動シグナルを送出。
                 """
                 if (
-                    _const.IS_MULTIPROCESSING and self.__out and
-                    self.__out.empty()
+                    _const.IS_MULTIPROCESSING and
+                    self.__out and self.__out.empty()
                 ):
                     self.__out.put_nowait(("signal", ("route_search",)))
                     self.__out.task_done()
@@ -65,16 +65,15 @@ class Marker(object):
                     old_state = self.__piece.state
                     if (
                         self.__piece.test_rotate(self.__field, clock_wise) ==
-                        _const.REVERSIBLE
+                        _const.FLEXIBLE
                     ):
                         result = __mark(
                             cmds+[_command.Breadcrumb(self.__piece.state)],
                             founds)
                     self.__piece.state = old_state
                     return result
-                is_t_spin_chance = (
-                    self.__piece.is_t and
-                    self.__piece.is_three_corner(self.__field))
+                is_prioritize_rotation = (
+                    is_t_spin and self.__piece.is_three_corner(self.__field))
                 if self.__field.is_left_side(self.__piece):
                     if self.__piece.top == self.__goal.top:
                         if self.__piece.left == self.__goal.left:
@@ -88,7 +87,7 @@ class Marker(object):
                             (__mark_move, _const.LEFT))
                         rotates = (__mark_rotate, False), (__mark_rotate, True)
                         return (
-                            rotates+moves if is_t_spin_chance else
+                            rotates+moves if is_prioritize_rotation else
                             moves+rotates)
                 else:
                     if self.__piece.top == self.__goal.top:
@@ -103,7 +102,7 @@ class Marker(object):
                             (__mark_move, _const.RIGHT))
                         rotates = (__mark_rotate, True), (__mark_rotate, False)
                         return (
-                            rotates+moves if is_t_spin_chance else
+                            rotates+moves if is_prioritize_rotation else
                             moves+rotates)
             state = self.__piece.state
             if state == self.__goal:

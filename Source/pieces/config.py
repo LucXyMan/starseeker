@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""config.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 パターンコンフィグモジュール。
@@ -16,12 +16,14 @@ def init():
     """
     import utils.const as __const
     global __basics, __levels
-    x1 = "Normal", 0, (1, 1)
-    x2 = "Normal", 0, (2, 2)
-    x3 = "Normal", 0, (3, 3)
-    x4 = "Normal", 0, (4, 4)
+    x1 = "Normal", -1, (1, 1)
+    x2 = "Normal", -1, (2, 2)
+    x3 = "Normal", -1, (3, 3)
+    x4 = "Normal", -1, (4, 4)
     all_t = (((3, 3), __const.QUARTER_PRUNING, (
         ((1, 0), x1), ((0, 1), x1), ((1, 1), x1), ((2, 1), x1))),)*7
+    all_o = (((2, 2), __const.SINGLE_PRUNING, (
+            ((0, 0), x1), ((1, 0), x1), ((0, 1), x1), ((1, 1), x1))),)*7
     __basics = (
         ((4, 4), __const.HALF_PRUNING, (
             ((0, 1), x1), ((1, 1), x1), ((2, 1), x1), ((3, 1), x1))),
@@ -37,7 +39,9 @@ def init():
             ((0, 0), x1), ((1, 0), x1), ((1, 1), x1), ((2, 1), x1))),
         ((3, 3), __const.QUARTER_PRUNING, (
             ((1, 0), x1), ((0, 1), x1), ((1, 1), x1), ((2, 1), x1))))
-    __basics = all_t if __const.PIECE_TEST == "T_SPIN_TEST" else __basics
+    __basics = (
+        all_t if __const.PIECE_TEST == "T_SPIN_TEST" else
+        all_o if __const.PIECE_TEST == "O_TEST" else __basics)
     __levels = (
         ((3, 3), __const.SINGLE_PRUNING, (((1, 1), x1),)),
         ((3, 3), __const.HALF_PRUNING, (((1, 1), x1), ((2, 1), x1))),

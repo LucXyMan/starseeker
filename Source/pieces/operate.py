@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""operate.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 操作ピースモジュール。
@@ -57,30 +57,30 @@ class Dropping(_Operate):
     __slots__ = (
         "__ghost", "__is_commanded", "__is_rested", "__is_t_spin",
         "__is_virtual", "__rotated")
-    __ROTATE_LIMIT = 40
-    __BASE_ROTATION = (
-        {_const.A0: (_const.RIGHT, _const.UP_RIGHT, (0, 2), (1, 2)),
-         _const.A90: (_const.RIGHT, _const.DOWN_RIGHT, (0, -2), (1, -2)),
-         _const.A180: (_const.LEFT, _const.UP_LEFT, (0, 2), (-1, 2)),
-         _const.A270: (_const.LEFT, _const.DOWN_LEFT, (0, -2), (-1, -2))},
-        {_const.A0: (_const.LEFT, _const.UP_LEFT, (0, 2), (-1, 2)),
-         _const.A90: (_const.RIGHT, _const.DOWN_RIGHT, (0, -2), (1, -2)),
-         _const.A180: (_const.RIGHT, (_const.UP_RIGHT), (0, 2), (1, 2)),
-         _const.A270: (_const.LEFT, _const.DOWN_LEFT, (0, -2), (-1, -2))})
-    __I_ROTATION = (
-        {_const.A0: (_const.LEFT, (2, 0), (-1, -2), (2, 1)),
-         _const.A90: ((2, 0), _const.LEFT, (2, -1), (-1, 2)),
-         _const.A180: (_const.RIGHT, (-2, 0), (1, -2), (-2, 1)),
-         _const.A270: (_const.RIGHT, (-2, 0), (-2, 1), (1, -2))},
-        {_const.A0: ((-2, 0), _const.RIGHT, (-2, 1), (1, -2)),
-         _const.A90: (_const.LEFT, (2, 0), (-1, -2), (2, 1)),
-         _const.A180: ((2, 0), _const.LEFT, (2, -1), (-1, -2)),
-         _const.A270: ((-2, 0), _const.RIGHT, (1, 2), (-2, -1))})
+    __ROTATE_LIMIT = 16
+    __BASE_ROTATION = ({
+        _const.A0: (_const.RIGHT, _const.UP_RIGHT, (0, 2), (1, 2)),
+        _const.A90: (_const.RIGHT, _const.DOWN_RIGHT, (0, -2), (1, -2)),
+        _const.A180: (_const.LEFT, _const.UP_LEFT, (0, 2), (-1, 2)),
+        _const.A270: (_const.LEFT, _const.DOWN_LEFT, (0, -2), (-1, -2))}, {
+        _const.A0: (_const.LEFT, _const.UP_LEFT, (0, 2), (-1, 2)),
+        _const.A90: (_const.RIGHT, _const.DOWN_RIGHT, (0, -2), (1, -2)),
+        _const.A180: (_const.RIGHT, (_const.UP_RIGHT), (0, 2), (1, 2)),
+        _const.A270: (_const.LEFT, _const.DOWN_LEFT, (0, -2), (-1, -2))})
+    __I_ROTATION = ({
+        _const.A0: (_const.LEFT, (2, 0), (-1, -2), (2, 1)),
+        _const.A90: ((2, 0), _const.LEFT, (2, -1), (-1, 2)),
+        _const.A180: (_const.RIGHT, (-2, 0), (1, -2), (-2, 1)),
+        _const.A270: (_const.RIGHT, (-2, 0), (-2, 1), (1, -2))}, {
+        _const.A0: ((-2, 0), _const.RIGHT, (-2, 1), (1, -2)),
+        _const.A90: (_const.LEFT, (2, 0), (-1, -2), (2, 1)),
+        _const.A180: ((2, 0), _const.LEFT, (2, -1), (-1, -2)),
+        _const.A270: ((-2, 0), _const.RIGHT, (1, 2), (-2, -1))})
 
     def __init__(self, pattern, pos=(0, 0), is_virtual=False):
         u"""コンストラクタ。
         """
-        _Operate.__init__(self, pattern, pos)
+        super(Dropping, self).__init__(pattern, pos)
         self.__is_rested = False
         self.__rotated = 0
         self.__is_commanded = False
@@ -88,18 +88,15 @@ class Dropping(_Operate):
         self.__is_virtual = is_virtual
         self._create()
 
+    # ---- Create and Remove ----
     def _create(self):
         u"""ブロック作成。
         """
         for block in self._pattern.get_blocks(
-                (self.left, self.top), self.__is_virtual):
+            (self.left, self.top), self.__is_virtual
+        ):
             block.piece = self
             self._blocks.append(block)
-
-    def clear(self):
-        u"""ブロック消去。
-        """
-        self._blocks = []
 
     def remove(self, block):
         u"""ブロック削除。
@@ -107,11 +104,35 @@ class Dropping(_Operate):
         if block in self._blocks[:]:
             self._blocks.remove(block)
 
-    def is_collide(self, field):
-        u"""接触テスト。
+    # ---- Operation ----
+    def clear(self):
+        u"""ブロック消去。
         """
-        return field.is_outer(self) or field.is_collide(self)
+        self._blocks = []
 
+    def stamp(self, field):
+        u"""ピースをフィールドに転写。
+        """
+        if not self.__is_rested:
+            field.add(*self._pattern.get_blocks(
+                (self.left, self.top), self.__is_virtual))
+            self.clear()
+
+    def rest(self, field):
+        u"""ピースの固着。
+        """
+        if not self.__is_rested:
+            self.stamp(field)
+            self.__is_rested = True
+
+    def skip(self):
+        u"""ピースを消去してレスト。
+        フィールド変化魔術発動の際に使用。
+        """
+        self.clear()
+        self.__is_rested = True
+
+    # ---- Move ----
     def move(self, field, vector):
         u"""ピースの移動。
         """
@@ -154,38 +175,6 @@ class Dropping(_Operate):
                 if not self.move(field, _const.DOWN):
                     return
 
-    def get_target(self, field):
-        u"""ターゲットピースを取得。
-        """
-        if not self.__is_rested:
-            old = self.topleft
-            self.to_bottom(field)
-            bottom = self.topleft
-            self.topleft = old
-            return _Target(self._pattern, bottom)
-
-    def stamp(self, field):
-        u"""ピースをフィールドに転写。
-        """
-        if not self.__is_rested:
-            field.add(*self._pattern.get_blocks(
-                (self.left, self.top), self.__is_virtual))
-            self.clear()
-
-    def rest(self, field):
-        u"""ピースの固着。
-        """
-        if not self.__is_rested:
-            self.stamp(field)
-            self.__is_rested = True
-
-    def skip(self):
-        u"""ピースを消去してレスト。
-        フィールド変化魔術発動の際に使用。
-        """
-        self.clear()
-        self.__is_rested = True
-
     def drop(self, field):
         u"""フィールド一番下に落下。
         コマンドを一度入力しなければ反応しない。
@@ -196,6 +185,7 @@ class Dropping(_Operate):
         else:
             self.__is_commanded = True
 
+    # ---- Rotate ----
     def _rotate(self, field, clock_wise, time):
         u"""回数付き回転処理。
         """
@@ -227,65 +217,113 @@ class Dropping(_Operate):
                 return False
         return True
 
-    def is_three_corner(self, field):
-        u"""角判定。
-        角に3つ以上のブロックが存在する場合に真。T-Spinに使用。
-        """
-        def __is_wall(x, y):
-            u"""ブロックが壁の場合に真。
-            """
-            if (
-                not 0 <= x < field.width or not 0 <= y < field.height or
-                field.table[y][x].is_block
-            ):
-                return True
-            return False
-        return 3 <= sum(1 for point in (
-            (self._left, self._top),
-            (self._left + self.width - 1, self._top),
-            (self._left, self._top + self.height - 1),
-            (self._left + self.width - 1, self._top + self.height - 1)
-            ) if __is_wall(*point))
-
     def rotate(self, field, clock_wise=True, time=1):
         u"""通常使用する回転処理。
         """
-        old = self.state
+        import material.sound as __sound
+        old_state = self.state
         if self.__is_rotatable:
             is_rotated = self._rotate(field, clock_wise, time)
             if is_rotated:
                 self.__is_t_spin = True if (
                     self.is_t and self.is_three_corner(field) and
-                    old != self.state) else False
+                    old_state != self.state) else False
             self.__rotated += 1
             return is_rotated
-        return False
+        else:
+            __sound.SE.play("error")
+            return False
 
     def test_rotate(self, field, clock_wise=True, time=1):
         u"""回転種類を判定するAI用回転処理。
         """
-        old = self.state
-        if not self.__is_rotatable or not self._rotate(
-            field, clock_wise, time
+        old_state = self.state
+        if (
+            not self.__is_rotatable or
+            not self._rotate(field, clock_wise, time)
         ):
             return _const.UNROTATABLE
         rotated = self.state
         if not self._rotate(field, not clock_wise, time):
             self.__rotated += 1
             return _const.ROTATABLE
-        elif old.top < rotated.top:
+        elif old_state.top < rotated.top:
             self.state = rotated
             self.__rotated += 1
             return _const.SHIFTED
-        elif self.state == old:
+        elif self.state == old_state:
             self.state = rotated
             self.__rotated += 1
-            return _const.REVERSIBLE
+            return _const.FLEXIBLE
         else:
             self.state = rotated
             self.__rotated += 1
             return _const.ROTATABLE
 
+    # ---- Target ----
+    def get_target(self, field):
+        u"""ターゲットピース取得。
+        """
+        class _Target(_Operate):
+            u"""ターゲットピース。
+            """
+            __slots__ = ()
+
+            def __init__(self, pattern, pos):
+                u"""コンストラクタ。
+                """
+                super(_Target, self).__init__(pattern.get_target(), pos)
+                self._create()
+
+            def _create(self):
+                u"""ブロック作成。
+                """
+                for block in self._pattern.get_blocks((self.left, self.top)):
+                    block.piece = self
+                    self._blocks.append(block)
+                for block in self._blocks:
+                    block.set_piece_edge()
+        if not self.__is_rested:
+            old_topleft = self.topleft
+            self.to_bottom(field)
+            bottom = self.topleft
+            self.topleft = old_topleft
+            return _Target(self._pattern, bottom)
+
+    # ---- Detect ----
+    def is_collide(self, field):
+        u"""接触テスト。
+        """
+        return field.is_outer(self) or field.is_collide(self)
+
+    def is_three_corner(self, field):
+        u"""角判定。
+        角に3つ以上の壁が存在する場合に真。
+        """
+        def __is_wall(point):
+            u"""壁判定。
+            """
+            cell = field.table.get_cell(point)
+            return not cell or cell.is_block
+        return 3 <= sum(1 for point in (
+            (self._left, self._top),
+            (self._left+self.width-1, self._top),
+            (self._left, self._top+self.height-1),
+            (self._left+self.width-1, self._top+self.height-1)
+        ) if __is_wall(point))
+
+    def is_flexible(self, field):
+        u"""逆回転可能判定。
+        """
+        old_state = self.state
+        for is_clock_wise in (True, False):
+            if _const.FLEXIBLE == self.test_rotate(field, is_clock_wise):
+                self.state = old_state
+                return True
+            self.state = old_state
+        return False
+
+    # ---- Property ----
     @property
     def virtual(self):
         u"""AI計算用ピース取得。
@@ -392,17 +430,18 @@ class Dropping(_Operate):
         """
         return self._pattern.angles
 
-    @property
-    def is_rested(self):
-        u"""下に落ちた場合に真。
-        """
-        return self.__is_rested
-
+    # ------ Detect ------
     @property
     def __is_rotatable(self):
         u"""回転可能の場合に真。
         """
         return self.__rotated < self.__ROTATE_LIMIT
+
+    @property
+    def is_rested(self):
+        u"""下に落ちた場合に真。
+        """
+        return self.__is_rested
 
     @property
     def is_t(self):
@@ -415,22 +454,3 @@ class Dropping(_Operate):
         u"""T-Spin状態取得。
         """
         return self.__is_t_spin
-
-
-class _Target(_Operate):
-    u"""ターゲットピース。
-    """
-    def __init__(self, pattern, pos):
-        u"""コンストラクタ。
-        """
-        super(_Target, self).__init__(pattern.get_target(), pos)
-        self._create()
-
-    def _create(self):
-        u"""ブロック作成。
-        """
-        for block in self._pattern.get_blocks((self.left, self.top)):
-            block.piece = self
-            self._blocks.append(block)
-        for block in self._blocks:
-            block.set_piece_edge()

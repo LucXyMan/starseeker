@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""collectible.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 カードコレクションモジュール。
@@ -47,34 +47,51 @@ class Collectible(object):
             result.append(collection.number)
         return tuple(result)
 
+    # ---- Getter ----
     def get_costs(self, cut):
-        u"""エレメンタルコストを取得。
+        u"""コスト取得。
         """
         import utils.const as __const
         cost = [0, 0, 0, 0, 0, 0, 0]
+        energy = __const.STAR_ENERGY >> cut
         if self._rank == 0 or self._star == -1:
-            return cost,
-        else:
-            cost[self._star] = self._rank*(__const.STAR_ENERGY >> cut)
-            costs = cost,
+            return tuple(cost),
+        cost[self._star] = self._rank*energy
+        costs = tuple(cost),
         if self._star == 6:
             for i in range(5):
-                c = [0, 0, 0, 0, 0, 0, 0]
-                c[i] = (self._rank+1)*(__const.STAR_ENERGY >> cut)
-                costs += c,
+                cost = [0, 0, 0, 0, 0, 0, 0]
+                cost[i] = (self._rank+1)*energy
+                costs += tuple(cost),
         elif self._star == 5:
-            c = [0, 0, 0, 0, 0, 0, 0]
-            c[6] = (self._rank+1)*(__const.STAR_ENERGY >> cut)
-            costs += c,
+            cost = [0, 0, 0, 0, 0, 0, 0]
+            cost[6] = (self._rank+1)*energy
+            costs += tuple(cost),
         else:
-            c = [0, 0, 0, 0, 0, 0, 0]
-            c[(self._star-1) % 5] = (self._rank+1)*(__const.STAR_ENERGY >> cut)
-            costs += c,
-            c = [0, 0, 0, 0, 0, 0, 0]
-            c[5] = (self._rank+1)*(__const.STAR_ENERGY >> cut)
-            costs += c,
-        return costs
+            cost = [0, 0, 0, 0, 0, 0, 0]
+            cost[(self._star-1) % 5] = (self._rank+1)*energy
+            costs += tuple(cost),
+            cost = [0, 0, 0, 0, 0, 0, 0]
+            cost[5] = (self._rank+1)*energy
+            costs += tuple(cost),
+        return tuple(costs)
 
+    def get_enchant(self, level):
+        u"""追加効果取得。
+        """
+        return ()
+
+    def get_persistence(self, turn):
+        u"""持続効果取得。
+        """
+        return ()
+
+    def get_special(self, turn):
+        u"""特殊効果取得。
+        """
+        return ""
+
+    # ---- Property ----
     @property
     def number(self):
         u"""番号取得
@@ -93,10 +110,10 @@ class Collectible(object):
         """
         return self._type
 
-    def is_usable(self, system, _other):
+    def is_usable(self, params):
         u"""使用可能判定。
         """
-        cost, _ = system.resorce.get_available(self)
+        cost, _ = params[0].resorce.get_available(self)
         return bool(cost)
 
     @property
@@ -108,7 +125,7 @@ class Collectible(object):
     @property
     def star(self):
         u"""スター数値取得。
-        木:0, 火:1, 土:2, 金:3, 水:4, 月:5, 日:6.
+        木:0, 火:1, 土:2, 金:3, 水:4, 月:5, 日:6
         """
         return self._star
 
@@ -117,6 +134,18 @@ class Collectible(object):
         u"""概要取得。
         """
         return self._description
+
+    @property
+    def skills(self):
+        u"""カードスキル取得。
+        """
+        return ""
+
+    @property
+    def subscript(self):
+        u"""カード添字取得。
+        """
+        return ""
 
     @property
     def is_no_cost(self):
@@ -129,9 +158,9 @@ def init():
     u"""コレクション初期化。
     """
     import units as __units
-    import sorcery as __sorcery
+    import specials as __specials
     import utils.const as __const
-    Collectible.set_collections(__units.get_creature_all()+__sorcery.get_all())
+    Collectible.set_collections(__units.get_summons()+__specials.get())
     if __const.IS_OUTPUT:
         print u"Collections"
         for i, collection in enumerate(Collectible.get_collections()):

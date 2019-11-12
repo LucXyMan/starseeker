@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""basic.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 基本ブロックモジュール。
@@ -15,70 +15,73 @@ class Basic(__block.Block):
     u"""ベーシックブロック。
     """
     _TARGET_COLOR = "white"
+    __box = []
 
-    def __init__(self, point, state, is_virtual):
-        u"""コンストラクタ。
+    @classmethod
+    def __get_color(cls):
+        u"""ペイント用のくじ引き。
         """
         import random as __random
-        super(Basic, self).__init__(point, state, is_virtual)
-        if state == 0:
-            self.__color = __random.randint(0, 7)
-            if isinstance(self, (Solid, Adamant)):
-                self.__color >>= 1
+        if not cls.__box:
+            cls.__box = range(_const.BASIC_COLORS)
+            __random.shuffle(cls.__box)
+        return cls.__box.pop()
 
-    def _destroy(self, _field, flag):
-        u"""破壊処理。
+    # ---- Completion ----
+    def crack(self, flag=0):
+        u"""クラック処理。
         """
         if self._is_power_flag(flag):
             self._is_destroyed = True
         else:
-            self.__hp += 1
-            if self._MAX_HP < self.__hp:
+            self.hp += 1
+            if self._MAX_HP < self.hp:
                 self._is_destroyed = True
 
-    def paint(self, color):
-        u"""ブロックの色付け。
+    # ---- Effect ----
+    def paint(self, color=-1):
+        u"""着色処理。
         piece単位で色をつける時に使用する。
         値はpatternによって決定される。
         """
-        self.__color = color
-        if isinstance(self, (Solid, Adamant)):
-            self.__color >>= 1
+        if color == -1:
+            color = self.__get_color()
+        self.color = color if isinstance(self, Normal) else color >> 1
 
+    # ---- Property ----
     @property
     def _current_image(self):
         u"""現在画像取得。
         """
-        hp = self.__hp if self.__hp < self._MAX_HP else self._MAX_HP
+        hp = self.hp if self.hp < self._MAX_HP else self._MAX_HP
         color = (
-            self.__color << 2 if isinstance(self, Adamant) else
-            self.__color << 1 if isinstance(self, Solid) else
-            self.__color)
+            self.color << 2 if isinstance(self, Adamant) else
+            self.color << 1 if isinstance(self, Solid) else self.color)
         return self._scaled_images[hp+color]
 
     @property
-    def __hp(self):
+    def hp(self):
         u"""HP取得。
         """
-        return self._state & 0b00001111
+        return self._state & 0x0F
 
-    @__hp.setter
-    def __hp(self, value):
+    @hp.setter
+    def hp(self, value):
         u"""HP設定。
         """
-        self._state = self.__color << 4 | value
+        self._state = self.color << 4 | value
 
     @property
-    def __color(self):
+    def color(self):
         u"""カラー取得。
         """
-        return (self._state & 0b11110000) >> 4
+        return (self._state & 0xF0) >> 4
 
-    @__color.setter
-    def __color(self, value):
+    @color.setter
+    def color(self, value):
         u"""カラー設定。
         """
-        self._state = value << 4 | self.__hp
+        self._state = value << 4 | self.hp
 
 
 class Normal(Basic):

@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""string.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 文字列スプライトモジュール。
@@ -16,12 +16,15 @@ import utils.const as _const
 class String(__pygame.sprite.DirtySprite):
     u"""文字列スプライト。
     """
-    def __init__(self, pos, text, size, color="##", shorten=True, groups=None):
+    def __init__(
+        self, pos, string, size,
+        color="##", shorten=True, groups=None
+    ):
         u"""コンストラクタ。
         """
         super(String, self).__init__(
             (self.group, self.draw_group) if groups is None else tuple(groups))
-        self.__text = str(text)
+        self.__text = str(string)
         self.__size = int(size)
         self.__color = str(color)
         self.__shorten = bool(shorten)
@@ -33,8 +36,8 @@ class String(__pygame.sprite.DirtySprite):
     def __repr__(self):
         u"""文字列表現取得。
         """
-        return u"<'text:{text}, size:{size}, color:{color}'>".format(
-            text=self.__text, size=self.__size, color=self.__color)
+        return u"<'string:{string}, size:{size}, color:{color}'>".format(
+            string=self.__text, size=self.__size, color=self.__color)
 
     def __set_image(self):
         u"""画像の設定。
@@ -57,14 +60,14 @@ class String(__pygame.sprite.DirtySprite):
             self.__old = self.__text, self.__size, self.__color, self.__shorten
 
     @property
-    def text(self):
-        u"""テキスト取得。
+    def string(self):
+        u"""文字列取得。
         """
         return self.__text
 
-    @text.setter
-    def text(self, value):
-        u"""テキスト設定。
+    @string.setter
+    def string(self, value):
+        u"""文字列設定。
         """
         self.__text = value
         self.__set_image()
@@ -111,14 +114,14 @@ class String(__pygame.sprite.DirtySprite):
 class Info(String):
     u"""ゲーム情報表示。
     """
-    __INTERVAL = _const.FRAME_RATE*2
+    __INTERVAL = _const.FRAME_RATE*3
     __texts = _collections.deque()
     __color = _const.WHITE+"#"+_const.GRAY+"#"+_const.BLACK
     __waiting = 0
     __is_ignore = False
 
     @classmethod
-    def send(cls, text, is_warning=False):
+    def send(cls, string, is_warning=False):
         u"""情報文字列設定。
         """
         if Info.__is_ignore and not is_warning:
@@ -129,7 +132,7 @@ class Info(String):
                 Info.__is_ignore = True
             else:
                 Info.__color = _const.WHITE+"#"+_const.GRAY+"#"+_const.BLACK
-            Info.__texts = _collections.deque(text.split("#"))
+            Info.__texts = _collections.deque(string.split("#"))
             Info.__waiting = 0
 
     def __init__(self, groups=None):
@@ -144,7 +147,7 @@ class Info(String):
         """
         if Info.__waiting == 0:
             if Info.__texts:
-                self.text = Info.__texts.popleft()
+                self.string = Info.__texts.popleft()
                 self.color = Info.__color
                 _layouter.Menu.set_info(self)
                 Info.__waiting = self.__INTERVAL

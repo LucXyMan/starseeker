@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""player.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 プレイヤーモジュール。
@@ -27,57 +27,58 @@ class Player(__unit.Unit):
         u"""文字列表現取得。
         """
         return (
-            u"<type: {type}, name: {name}, power_ups: {power_up}, "
+            u"<type: {type}, name: {name}, level: {level}, "
             u"direction: {direction}, another: {another}>").format(
                 type=self.__class__.__name__, name=self._data.name,
-                power_up=self.power_up_level,
+                level=self.level,
                 direction="Right" if self._is_right else "Left",
                 another="Another" if self.__is_another else "Basic")
 
     def set_equip(self, wp, hlm, armr, acs):
         u"""装備設定。
         """
-        import armament.equip as __equip
+        import armament.equips as __equips
 
         class __BrokenEquip(object):
-            u"""装備データアダプタ。
+            u"""装備アダプタ。
             装備の破損を表現する。
             """
-            __slots__ = "__data", "__broken"
-            __TIME_TO_RECOVERY = 6
+            __slots__ = "__broken", "__equip"
+            __TIME_TO_RECOVERY = 8
 
-            def __init__(self, data):
+            def __init__(self, equip):
                 u"""コンストラクタ。
-                data: 装備データ。
                 """
-                self.__data = data
+                self.__equip = equip
                 self.__broken = 0
 
             def __repr__(self):
                 u"""文字列表現取得。
                 """
-                return self.__data.__repr__()
+                return self.__equip.__repr__()
 
-            def get_special(self, lv):
+            # ---- Ability ----
+            def get_enchant(self, lv):
                 u"""武器効果取得。
                 """
-                effect = self.__data.get_special(lv)
+                effect = self.__equip.get_enchant(lv)
                 return effect if effect and not self.__is_broken else ()
 
-            def get_sustain(self, turn):
+            def get_persistence(self, turn):
                 u"""頭防具効果取得。
                 """
-                effect = self.__data.get_sustain(turn)
+                effect = self.__equip.get_persistence(turn)
                 return effect if effect and not self.__is_broken else ()
 
-            def is_prevents(self, target):
+            def is_prevention(self, target):
                 u"""ブロック変化防止判定。
                 """
-                if self.__data.is_prevents(target) and not self.__is_broken:
+                if self.__equip.is_prevention(target) and not self.__is_broken:
                     return True
                 else:
                     return False
 
+            # ---- Break and Repair ----
             def break_(self):
                 u"""破損させる。
                 """
@@ -92,46 +93,7 @@ class Player(__unit.Unit):
                     return True
                 return False
 
-            @property
-            def name(self):
-                u"""名前取得。
-                """
-                return self.__data.name
-
-            @property
-            def number(self):
-                u"""番号取得。
-                """
-                return self.__data.number
-
-            @property
-            def additional(self):
-                u"""アクセサリによるパターン変更リクエストを取得。
-                """
-                return (
-                    self.__data.additional if self.__data.additional and
-                    not self.__is_broken else ())
-
-            @property
-            def value(self):
-                u"""能力値取得。
-                """
-                return 0 if self.__is_broken else self.__data.value
-
-            @property
-            def icon(self):
-                u"""画像番号からアイコン取得。
-                """
-                return self.__data.icon
-
-            @property
-            def is_useable(self):
-                u"""使用可能状態取得。
-                """
-                return (
-                    False if self.__data.number == 0 else
-                    self.__broken <= 0)
-
+            # ---- Property ----
             @property
             def __is_broken(self):
                 u"""破損状態取得。
@@ -142,21 +104,59 @@ class Player(__unit.Unit):
                     return True
                 else:
                     return False
+
+            @property
+            def name(self):
+                u"""名前取得。
+                """
+                return self.__equip.name
+
+            @property
+            def number(self):
+                u"""番号取得。
+                """
+                return self.__equip.number
+
+            @property
+            def addition(self):
+                u"""アクセサリによるパターン変更リクエストを取得。
+                """
+                return (
+                    self.__equip.addition if self.__equip.addition and
+                    not self.__is_broken else ())
+
+            @property
+            def value(self):
+                u"""能力値取得。
+                """
+                return 0 if self.__is_broken else self.__equip.value
+
+            @property
+            def image_number(self):
+                u"""画像番号取得。
+                """
+                return self.__equip.image_number
+
+            @property
+            def icon(self):
+                u"""画像番号からアイコン取得。
+                """
+                return self.__equip.icon
+
+            @property
+            def is_useable(self):
+                u"""使用可能状態取得。
+                """
+                return (
+                    False if self.__equip.number == 0 else
+                    self.__broken <= 0)
         self.__equip = (
-            __BrokenEquip(__equip.get(wp)),
-            __BrokenEquip(__equip.get(hlm)),
-            __BrokenEquip(__equip.get(armr)),
-            __BrokenEquip(__equip.get(acs)))
+            __BrokenEquip(__equips.get(wp)),
+            __BrokenEquip(__equips.get(hlm)),
+            __BrokenEquip(__equips.get(armr)),
+            __BrokenEquip(__equips.get(acs)))
 
-    def add_effect(self, effect):
-        u"""エフェクト追加。
-        すでに文字表示エフェクトが存在する場合は、eliminateする。
-        """
-        if self._effect and not self._effect.is_dead:
-            self._effect.eliminate()
-            self._effect = None
-        self._effect = effect
-
+    # ---- Attack ----
     def attack(self):
         u"""攻撃処理。
         """
@@ -169,14 +169,26 @@ class Player(__unit.Unit):
             return stroke, lv
         return 0, 0
 
+    # ---- Update ----
+    def add_effect(self, effect):
+        u"""エフェクト追加。
+        すでに文字表示エフェクトが存在する場合は、eliminateする。
+        """
+        if self._effect and not self._effect.is_dead:
+            self._effect.eliminate()
+            self._effect = None
+        self._effect = effect
+
+    # ---- Property ----
     @property
     def _vit(self):
-        u"""ユニットの守り＋装備の防御力取得。
+        u"""ユニットの守り+装備の防御力取得。
         """
         return (
             self._data.vit+self.helm.value +
             self.armor.value+self.accessory.value)
 
+    # ------ Image ------
     @property
     def base_image(self):
         u"""基本画像取得。
@@ -203,6 +215,7 @@ class Player(__unit.Unit):
         self.__is_another = bool(value)
         self.image = self.current_image
 
+    # ------ Equip ------
     @property
     def equip(self):
         u"""装備取得。

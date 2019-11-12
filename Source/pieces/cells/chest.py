@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""chest.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 宝箱・鍵ブロックモジュール。
@@ -11,15 +11,29 @@ import random as _random
 import utils.const as _const
 import block as __block
 import irregular as __irregular
-import creature as __creature
+import monster as __monster
 
 
+# ---- Key ----
 class Key(__block.Block):
     u"""鍵ブロック。
     """
+    __UNLOCKED_STATE = 255
     _EFFECT = "yellow_light"
     _TARGET_COLOR = "orange"
 
+    def crack(self, flag=0):
+        u"""クラック処理。
+        """
+        if self._is_treasure_flag(flag):
+            self._state = self.__UNLOCKED_STATE
+            self._is_destroyed = True
+        else:
+            self._state += 1
+            if self._MAX_HP < self._state:
+                self._is_destroyed = True
+
+    # ---- Property ----
     @property
     def _current_image(self):
         u"""現在画像取得。
@@ -27,28 +41,19 @@ class Key(__block.Block):
         return self._scaled_images[
             self._state if self._state < self._MAX_HP else self._MAX_HP]
 
-    def _destroy(self, _table, flag):
-        u"""破壊処理。
+    @property
+    def _is_effect_available(self):
+        u"""エフェクト使用可能判定。
         """
-        if self._is_treasure_flag(flag):
-            self._is_destroyed = True
-            self._state = -1
-        else:
-            self._state += 1
-            if self._MAX_HP < self._state:
-                self._is_destroyed = True
+        return (
+            super(Key, self)._is_effect_available and
+            self._state == self.__UNLOCKED_STATE)
 
     @property
     def is_key(self):
         u"""鍵判定。
         """
         return True
-
-    @property
-    def _is_effect_available(self):
-        u"""エフェクト使用可能判定。
-        """
-        return super(Key, self)._is_effect_available and self._state == -1
 
 
 class BronzeKey(Key):
@@ -78,9 +83,11 @@ class GoldKey(Key):
     _MAX_HP = 3
 
 
+# ---- Box ----
 class _Box(__block.Block):
     u"""箱ブロック。
     """
+    _OPENED_STATE = 255
     _EFFECT = "yellow_light#blue_light#green_light#purple_light"
 
     def _change_mimic(self):
@@ -89,6 +96,7 @@ class _Box(__block.Block):
         if hasattr(self, "_MIMIC"):
             self.change(self._MIMIC)
 
+    # ---- Property ----
     @property
     def _hp(self):
         u"""HP取得。
@@ -100,8 +108,14 @@ class _Box(__block.Block):
         u"""現在画像取得。
         """
         return self._scaled_images[
-            -1 if self.is_opened else
-            (self._MAX_HP if self._MAX_HP < self._hp else self._hp)]
+            -1 if self.is_opened else self._MAX_HP if
+            self._MAX_HP < self._hp else self._hp]
+
+    @property
+    def _is_effect_available(self):
+        u"""エフェクト使用可能判定。
+        """
+        return super(_Box, self)._is_effect_available and self.is_opened
 
     @property
     def is_mimic(self):
@@ -120,15 +134,10 @@ class _Box(__block.Block):
     def is_opened(self):
         u"""空箱判定。
         """
-        return self._state == -1
-
-    @property
-    def _is_effect_available(self):
-        u"""エフェクト使用可能判定。
-        """
-        return super(_Box, self)._is_effect_available and self.is_opened
+        return self._state == self._OPENED_STATE
 
 
+# ---- Chest ----
 class _Chest(_Box):
     u"""宝箱ブロック。
     """
@@ -151,16 +160,16 @@ class IronChest(_Chest):
     _MAX_HP = 0
     _RANK = 1
 
-    def _destroy(self, _table, _flag):
-        u"""破壊処理。
+    def crack(self, _flag=0):
+        u"""クラック処理。
         """
         if self.is_opened:
             self._is_destroyed = True
         else:
-            self._state = -1
+            self._state = self._OPENED_STATE
 
 
-class _Lock(_Chest):
+class _Locked(_Chest):
     u"""鍵付き宝箱ブロック。
     9分の1が当たりでそれ以外がハズレ。
     """
@@ -169,19 +178,18 @@ class _Lock(_Chest):
     def __init__(self, point, state, is_virtual):
         u"""コンストラクタ。
         """
-        super(_Lock, self).__init__(
-            point, state if state else (
-                1 if _random.randint(0, self.__MISS_RATE) == 0 else
-                0) << 4, is_virtual)
+        if state == -1:
+            state = (0 if _random.randint(0, self.__MISS_RATE) else 1) << 4
+        super(_Locked, self).__init__(point, state, is_virtual)
 
-    def _destroy(self, _table, flag):
-        u"""破壊処理。
+    def crack(self, flag=0):
+        u"""クラック処理。
         """
         if self.is_opened:
             self._is_destroyed = True
         else:
             if self._is_unlock_flag(flag):
-                self._state = -1
+                self._state = self._OPENED_STATE
             else:
                 self._state = self.is_mimic << 4 | self._hp+1
                 if self._MAX_HP < self._hp:
@@ -194,10 +202,10 @@ class _Lock(_Chest):
     def is_locked(self):
         u"""鍵付き宝箱・ミミックの場合に真。
         """
-        return True
+        return not self.is_opened
 
 
-class BronzeChest(_Lock):
+class BronzeChest(_Locked):
     u"""銅の宝箱ブロック。
     """
     _SCORE = _const.QUARTER_SCORE
@@ -208,7 +216,7 @@ class BronzeChest(_Lock):
     _RANK = 2
 
 
-class SilverChest(_Lock):
+class SilverChest(_Locked):
     u"""銀の宝箱ブロック。
     """
     _SCORE = _const.HALF_SCORE
@@ -219,7 +227,7 @@ class SilverChest(_Lock):
     _RANK = 3
 
 
-class GoldChest(_Lock):
+class GoldChest(_Locked):
     u"""金の宝箱ブロック。
     """
     _SCORE = _const.SINGLE_SCORE
@@ -246,12 +254,12 @@ class Pandora(_Box):
     def __init__(self, point, state, is_virtual):
         u"""コンストラクタ。
         """
-        super(Pandora, self).__init__(point, state if state else (
-            1 if _random.randint(0, self.__HIT_RATE) != 0 else
-            0) << 4, is_virtual)
+        if state == -1:
+            state = (1 if _random.randint(0, self.__HIT_RATE) else 0) << 4
+        super(Pandora, self).__init__(point, state, is_virtual)
 
-    def _destroy(self, _table, flag):
-        u"""破壊処理。
+    def crack(self, flag=0):
+        u"""クラック処理。
         """
         if self._is_force_flag(flag):
             self._is_destroyed = True
@@ -261,7 +269,7 @@ class Pandora(_Box):
             if self.is_mimic:
                 self._change_mimic()
             else:
-                self._state = -1
+                self._state = self._OPENED_STATE
 
     @property
     def is_invincible(self):
@@ -271,15 +279,17 @@ class Pandora(_Box):
         return self.is_mimic or self.is_opened
 
 
-class __Mimic(__irregular.Invincible, __creature.Mover):
+# ---- Mimic ----
+class __Mimic(__irregular.Invincible, __monster.Mover):
     u"""ミミックブロック。
-    フィールド上を動いてブロックを破壊する。鍵ブロックで封印できる。
+    フィールド上を動いてブロックとアイテムを破壊する。
+    鍵ブロックで封印できる。
     """
     _FRAME_NUM = 4
     _EFFECT = "white_fire"
     _MALIGNANCY = _const.HIGH_MALIGNANCY
 
-    def _destroy(self, _table, flag):
+    def crack(self, flag=0):
         u"""強制クラックか鍵があれば破壊できる。
         """
         if self._is_force_flag(flag) or self._is_unlock_flag(flag):
@@ -288,13 +298,10 @@ class __Mimic(__irregular.Invincible, __creature.Mover):
     def effect(self):
         u"""フィールドを移動しながら変化させる。
         """
-        if hasattr(self, "_FAVO"):
-            for cell in self._get_dest_cells():
-                if cell and self._migration(
-                    cell, self._FAVO+"#"+_const.STAR_NAMES+"#" +
-                    _const.SHARD_NAMES+"#"+_const.CARD_NAMES, self._FOOTPRINT
-                ):
-                    return None
+        favo = self._FAVO+"#" if hasattr(self, "_FAVO") else ""
+        self._move(
+            favo+_const.STAR_NAMES+"#"+_const.SHARD_NAMES+"#" +
+            _const.CARD_NAMES, self._FOOTPRINT)
 
     @property
     def is_locked(self):

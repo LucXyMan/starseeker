@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""puzzle.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 パズルモードモジュール。
@@ -10,7 +10,7 @@ This software is released under BSD license.
 import pygame as _pygame
 import mode as __mode
 import utils.const as _const
-import system as _system
+import systems as _systems
 
 
 class _Puzzle(__mode.Mode):
@@ -43,7 +43,7 @@ class _Puzzle(__mode.Mode):
                 super(_Paused, self).__init__(
                     (0, 0), "Paused", _const.MODE_CHAR_SIZE, self.__COLOR,
                     True, ())
-                __layouter.Game.set_paused(self)
+                __layouter.Game.set_center(self)
         if self._is_error:
             return _const.MODE_SELECT_STATUS
         paused = _Paused()
@@ -77,25 +77,27 @@ class Duel(_Puzzle):
     def __init__(self):
         u"""コンストラクタ。
         """
-        self._manager = _system.Duel()
+        self._manager = _systems.Duel()
         super(Duel, self).__init__()
 
     def _switch(self, is_win):
         u"""モード切り替え処理。
         報奨SP・アイテム取得、レベルフラグオン。
         """
-        import armament.level as __level
-        import inventory as __inventory
+        import armament.levels as __levels
+        import inventories as __inventories
+        bounty = 200
         if is_win:
-            level = __level.get_duel()
-            if not __inventory.Level.has(level.number):
+            level = __levels.get_duel()
+            if not __inventories.Level.has(level.number):
                 for reward in level.rewards:
-                    __inventory.Cards.set(
-                        reward, __inventory.Cards.get(reward)+1)
+                    __inventories.Card.set(
+                        reward, __inventories.Card.get(reward)+1)
                 number, player_level = level.player
-                __inventory.SP.add((player_level+1)*(
-                    200 if number == _const.PLAYER_NUMBER else 100))
-                __inventory.Level.on(level.number)
+                __inventories.SP.add((player_level+1)*(
+                    bounty << 1 if number == _const.PLEYERS else
+                    bounty))
+                __inventories.Level.on(level.number)
         super(Duel, self)._switch(_const.MODE_SELECT_STATUS)
 
 
@@ -107,7 +109,7 @@ class Versus(_Puzzle):
     def __init__(self):
         u"""コンストラクタ。
         """
-        self._manager = _system.Versus()
+        self._manager = _systems.Versus()
         super(Versus, self).__init__()
 
     def _switch(self, _):
@@ -124,7 +126,7 @@ class Endless(_Puzzle):
     def __init__(self):
         u"""コンストラクタ。
         """
-        self._manager = _system.Endless()
+        self._manager = _systems.Endless()
         super(Endless, self).__init__()
 
     def _switch(self, is_win):

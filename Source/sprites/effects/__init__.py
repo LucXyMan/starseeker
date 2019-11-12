@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""effects.__init__.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 エフェクトスプライトパッケージ。
@@ -16,9 +16,9 @@ Damage = __string.Damage
 Recovery = __string.Recovery
 Special = __string.Special
 Spell = __string.Spell
-Delete = __string.Delete
+Shred = __string.Shred
 Rival = __string.Rival
-Level = __string.Level
+Progress = __string.Progress
 Win = __string.Win
 Lose = __string.Lose
 Draw = __string.Draw

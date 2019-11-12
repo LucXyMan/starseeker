@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""counter.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 フレームカウンタモジュール。
@@ -15,6 +15,18 @@ def init():
     """
     global __counter
     __counter = __Counter(4, 6, 8, 16)
+
+
+def forward():
+    u"""カウントを進める。
+    """
+    return __counter.forward()
+
+
+def get_frame(number):
+    u"""フレーム取得。
+    """
+    return __counter.get_frame(number)
 
 
 class __Counter(object):
@@ -42,8 +54,8 @@ class __Counter(object):
         self.__frame = 0
         self.__lcm = numbers[0] if len(numbers) == 1 else _get_lcm(*numbers)
         for num in numbers:
-            self.__dict[num] = reduce(
-                lambda x, y: x+y, ((i,)*(self.__lcm/num) for i in range(num)))
+            self.__dict[num] = reduce(lambda x, y: x+y, (
+                (i,)*(self.__lcm/num) for i in range(num)))
 
     def forward(self):
         u"""カウントを進める。
@@ -55,15 +67,3 @@ class __Counter(object):
         u"""フレーム取得。
         """
         return self.__dict[number][self.__frame]
-
-
-def forward():
-    u"""カウントを進める。
-    """
-    return __counter.forward()
-
-
-def get_frame(number):
-    u"""フレーム取得。
-    """
-    return __counter.get_frame(number)

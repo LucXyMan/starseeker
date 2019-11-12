@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""flash.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 フラッシュ画像生成モジュール。
@@ -111,17 +111,17 @@ def summon_generator(unit):
             yield image
 
 
-def ability_generator(unit):
-    u"""アビリティフラッシュジェネレータ。
+def skill_generator(unit):
+    u"""スキルフラッシュジェネレータ。
     """
     @_memoize.memoize(get_key=__get_key)
-    def __ability_generator(unit):
+    def __skill_generator(unit):
         u"""アビリティフラッシュに使用する画像を取得。
         """
         return tuple((_image.get_colored_add(
             unit.current_image, _const.BURNING[i & 0b111])
         ) for i in range(__FLASH_TIME))
-    for image in __ability_generator(unit):
+    for image in __skill_generator(unit):
         __create_effect(unit, "red_light")
         yield image
 
@@ -130,9 +130,9 @@ def get(unit, type_):
     u"""フラッシュジェネレータ取得。
     """
     return (
-        damage_generator(unit) if type_ == "Damage" else
-        recovery_generator(unit) if type_ == "Recovery" else
-        summon_generator(unit) if type_ == "Summon" else
-        poison_generator(unit) if type_ == "Poison" else
-        ability_generator(unit) if type_ == "Ability" else
+        damage_generator(unit) if type_ == "damage" else
+        recovery_generator(unit) if type_ == "recovery" else
+        summon_generator(unit) if type_ == "summon" else
+        poison_generator(unit) if type_ == "poison" else
+        skill_generator(unit) if type_ == "skill" else
         normal_generator(unit))

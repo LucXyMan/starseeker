@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""icon.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 アイコン画像素材モジュール。
@@ -20,14 +20,17 @@ def init(container):
         import utils.image as __image
         basic = __image.load(container.get("items.png"))
         height = 6
-        for surf in (__image.get_other_color(basic, i) for i in range(16)):
+        for surf in (__image.get_another_color(basic, i) for i in range(16)):
             part = __image.segment(surf, (16, height))
             __items.append([part[j*16:j*16+16] for j in range(height)])
     __items = []
     __icon_proc()
 
 
-def get(x, y, c):
+def get(number):
     u"""アイコン画像取得。
     """
-    return __items[c][y][x]
+    x = (number & 0xF00) >> 8
+    y = (number & 0x0F0) >> 4
+    color = number & 0x00F
+    return __items[color][y][x]

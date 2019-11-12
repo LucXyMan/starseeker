@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""item.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 アイテムブロックモジュール。
@@ -12,6 +12,7 @@ import utils.const as _const
 import block as __block
 
 
+# ---- Star ----
 class __Star(__block.Block):
     u"""スターブロック。
     """
@@ -25,8 +26,8 @@ class __Star(__block.Block):
         五星の流れ: 木→火→土→金→水→木…
         """
         is_rank_up = False
-        for cell in self._get_surround(self._CROSS):
-            if cell and cell._is_target(self._TARGETS) and cell.rank_up():
+        for cell in self._get_around(self._CROSS):
+            if cell and cell.is_target(self._TARGETS) and cell.rank_up():
                 is_rank_up = True
         if is_rank_up and 0 <= self._state:
             self._state -= 1
@@ -129,6 +130,7 @@ class Sun(__Star):
     _TYPE = 7
 
 
+# ---- Shard ----
 class __Shard(__block.Block):
     u"""パワーアップブロック。
     """
@@ -175,8 +177,9 @@ class Speed(__Shard):
     _TYPE = 4
 
 
-class __Arcanum(__block.Block):
-    u"""アルカナブロック。
+# ---- Card ----
+class __Card(__block.Block):
+    u"""カードブロック。
     """
     _FRAME_NUM = 6
     _SCORE = _const.SINGLE_SCORE
@@ -189,29 +192,36 @@ class __Arcanum(__block.Block):
         return True
 
 
-class Summon(__Arcanum):
-    u"""召喚アルカナ。
+class Summon(__Card):
+    u"""サモンカード。
     """
     _IMAGES = "yellow_card"
     _SMALL_IMAGE = "rect_2"
 
 
-class Sorcery(__Arcanum):
-    u"""魔術アルカナ。
+class Sorcery(__Card):
+    u"""ソーサリーカード。
     """
     _IMAGES = "green_card"
     _SMALL_IMAGE = "rect_4"
 
 
-class Shield(__Arcanum):
-    u"""シールドアルカナ。
+class Shield(__Card):
+    u"""シールドカード。
     """
     _IMAGES = "purple_card"
     _SMALL_IMAGE = "rect_7"
 
 
-class Joeker(__Arcanum):
-    u"""ジョーカーアルカナ。
+class Support(__Card):
+    u"""サポートカード。
+    """
+    _IMAGES = "cyan_card"
+    _SMALL_IMAGE = "rect_5"
+
+
+class Joker(__Card):
+    u"""ジョーカーカード。
     """
     _IMAGES = "black_card"
     _SMALL_IMAGE = "rect_9"

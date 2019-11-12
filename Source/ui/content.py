@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""content.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 UIコンテンツモジュール。
@@ -132,15 +132,14 @@ class Control(Content):
         super(Control, self).__init__()
         self._cursor = 0
 
+    def _update_info(self):
+        u"""情報を更新。
+        """
     def eliminate(self):
         u"""削除処理。
         """
         for control in self._controls:
             control.kill()
-
-    def _update_info(self):
-        u"""情報を更新。
-        """
 
     def left(self):
         u"""カーソルを左に。
@@ -203,7 +202,7 @@ class Control(Content):
         pos = int(value)
         self._cursor = 0 if pos < 0 else limit if limit < pos else pos
         if self._cursor != old:
-            _sound.SE.play("Cursor")
+            _sound.SE.play("cursor_1")
         for control in self._controls:
             control.is_light = False
         self._controls[self._cursor].is_light = True

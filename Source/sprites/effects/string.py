@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-2
 u"""string.py
 
-Copyright(c)2019 Yukio Kuro
+Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 文字列エフェクトモジュール。
@@ -11,6 +11,7 @@ import material.sound as _sound
 import material.string as _string
 import utils.const as _const
 import utils.image as _image
+import utils.layouter as _layouter
 import effect as _effect
 
 
@@ -18,6 +19,7 @@ class _String(_effect.Effect):
     u"""基本文字列エフェクト。
     """
     _CHAR_SIZE = _const.EFFECT_CHAR_SIZE
+    _VECTOR = 0, 0
 
     class _Form(object):
         u"""エフェクト生成パラメータ。
@@ -81,33 +83,35 @@ class _String(_effect.Effect):
         for image, vector in self._get_init_params(form):
             yield image, vector
         for image in self._flash_generator(image, form.period):
-            yield image, (0, -1)
+            yield image, self._VECTOR
 
 
-class _Display(_String):
+# ---- Number ----
+class _Number(_String):
     u"""戦闘数値表示。
     """
+    _VECTOR = 0, 0
+
     def __init__(self, pos, string, groups=None):
         u"""コンストラクタ。
         """
-        super(_Display, self).__init__(pos, self._Form(
+        super(_Number, self).__init__(pos, self._Form(
             string, self._COLOR, _const.FRAME_RATE >> 1), groups)
 
 
-class Damage(_Display):
+class Damage(_Number):
     u"""ダメージ数値表示。
     """
-    _COLOR = "{start}#{end}#{back}".format(
-        start=_const.RED, end=_const.YELLOW, back=_const.DARK_RED)
+    _COLOR = _const.RED+"#"+_const.YELLOW+"#"+_const.DARK_RED
 
 
-class Recovery(_Display):
+class Recovery(_Number):
     u"""回復数値表示。
     """
-    _COLOR = "{start}#{end}#{back}".format(
-        start=_const.BLUE, end=_const.CYAN, back=_const.DARK_BLUE)
+    _COLOR = _const.BLUE+"#"+_const.CYAN+"#"+_const.DARK_BLUE
 
 
+# ---- Activate ----
 class _Activate(_String):
     u"""発動エフェクト。
     """
@@ -128,6 +132,10 @@ class _Activate(_String):
     def _generator(self, form):
         u"""文字列画像ジェネレータ。
         """
+        class __Char(_String):
+            u"""文字エフェクト。
+            """
+            _VECTOR = 0, -1
         import random as __random
         for image, vector in self._get_init_params(form):
             yield image, vector
@@ -135,7 +143,7 @@ class _Activate(_String):
         numbers = range(1, len(form.string)+1)
         __random.shuffle(numbers)
         for number, char in zip(numbers, form.string):
-            effect = _String((0, 0), self._Form(
+            effect = __Char((0, 0), self._Form(
                 char, form.color.string, number*(form.period >> 1) >> 3))
             effect.rect.midleft = x, y
             x += effect.rect.width
@@ -155,51 +163,50 @@ class Special(_Activate):
     def __init__(self, pos, string, groups=None):
         u"""コンストラクタ。
         """
-        super(Special, self).__init__(
-            pos, string, "{start}#{end}#{back}".format(
-                start=_const.WHITE, end=_const.CYAN, back=_const.GRAY), groups)
+        color = _const.WHITE+"#"+_const.CYAN+"#"+_const.GRAY
+        super(Special, self).__init__(pos, string, color, groups)
 
 
 class Spell(_Activate):
     u"""呪文エフェクト。
     """
-    def __init__(self, pos, item, is_reverse, groups=None):
+    def __init__(self, pos, item, is_reverse=False, groups=None):
         u"""コンストラクタ。
         """
-        _sound.SE.play("Spell_"+(
-            "2" if item.type == _const.PILED_TYPE else "1"))
-        start, end, back = {
-            _const.SUMMON_TYPE: (
-                _const.YELLOW, _const.ORANGE, _const.DARK_YELLOW),
-            _const.FUSIONED_TYPE: (_const.RED, _const.ORANGE, _const.DARK_RED),
-            _const.SORCERY_TYPE: (
-                _const.VIRIDIAN, _const.GREEN, _const.DARK_VIRIDIAN),
-            _const.PILED_TYPE: (_const.BLUE, _const.CYAN, _const.DARK_BLUE),
-            _const.SHIELD_TYPE: (
-                _const.PURPLE, _const.MAGENTA, _const.DARK_MAGENTA),
-            _const.JOKER_TYPE: (_const.BLACK, _const.BLUE, _const.DARK_BLUE)
-            }[item.type]
+        _sound.SE.play("spell_"+(
+            "2" if item.type == _const.ALTERED_ARCANUM else "1"))
+        colors = {
+            _const.SUMMON_ARCANUM:
+            (_const.YELLOW, _const.ORANGE, _const.DARK_YELLOW),
+            _const.FUSIONED_ARCANUM:
+            (_const.RED, _const.ORANGE, _const.DARK_RED),
+            _const.SORCERY_ARCANUM:
+            (_const.VIRIDIAN, _const.GREEN, _const.DARK_VIRIDIAN),
+            _const.ALTERED_ARCANUM:
+            (_const.BLUE, _const.CYAN, _const.DARK_BLUE),
+            _const.SHIELD_ARCANUM:
+            (_const.PURPLE, _const.MAGENTA, _const.DARK_MAGENTA),
+            _const.JOKER_ARCANUM:
+            (_const.GRAY, _const.BLUE, _const.DARK_BLUE)}
+        start, end, back = colors[item.type]
         super(Spell, self).__init__(
             pos, item.name[::-1] if bool(is_reverse) else item.name,
             start+"#"+end+"#"+back, groups)
 
 
-class Delete(_Activate):
+class Shred(_Activate):
     u"""削除エフェクト。
     """
     def __init__(self, pos, item, groups=None):
         u"""コンストラクタ。
         """
-        _sound.SE.play("Shred")
-        super(Delete, self).__init__(
-            pos, item.name, "{start}#{end}#{back}".format(
-                start=_const.BLACK, end=_const.RED, back=_const.DARK_RED),
-            groups)
+        color = _const.GRAY+"#"+_const.RED+"#"+_const.DARK_RED
+        super(Shred, self).__init__(pos, item.name, color, groups)
 
     def _generator(self, form):
         u"""文字列画像ジェネレータ。
         """
-        class _Cross(_String):
+        class __Cross(_String):
             u"""交差文字エフェクト。
             上下に交差する文字。
             """
@@ -222,12 +229,13 @@ class Delete(_Activate):
                         (0, -1 if up & 0b1 == 0 else 1))
         for image, vector in self._get_init_params(form):
             yield image, vector
+        _sound.SE.play("shred")
         x, y = self.rect.midleft
         for up, char in zip((
             False if i & 0b1 == 0 else
             True for i in range(len(form.string))), form.string
         ):
-            effect = _Cross((0, 0), self._Form(
+            effect = __Cross((0, 0), self._Form(
                 char, form.color.string, form.period >> 1), up)
             effect.rect.midleft = x, y
             x += effect.rect.width
@@ -235,6 +243,7 @@ class Delete(_Activate):
         yield _image.get_clear(image), (0, 0)
 
 
+# ---- Start ----
 class __Start(_String):
     u"""ゲーム開始エフェクト。
     """
@@ -247,11 +256,11 @@ class __Start(_String):
         for i in range(self._DOT_LENGTH+1):
             string = (first + u"."*i).ljust(len(first)+self._DOT_LENGTH)
             for _ in range(form.period):
-                yield (_string.get_string(
-                    string, self._CHAR_SIZE, form.color), (0, 0))
+                yield _string.get_string(
+                    string, self._CHAR_SIZE, form.color), (0, 0)
         for i in range(1, len(last)+1):
-            yield (_string.get_string(
-                last[:i], self._CHAR_SIZE, form.color), (0, 0))
+            yield _string.get_string(
+                last[:i], self._CHAR_SIZE, form.color), (0, 0)
         for _ in range(form.period):
             image = _string.get_string(
                 last, self._CHAR_SIZE, form.color)
@@ -270,14 +279,14 @@ class Rival(__Start):
         _const.CASTOR_NAME: "Castor", _const.PLUTO_NAME: "Pluto",
         _const.REGULUS_NAME: "Regulus", _const.LUCIFER_NAME: "Lucifer",
         _const.NEBULA_NAME: "Nebula"}
-    _COLOR = "{start}#{end}#{back}".format(
-        start=_const.CYAN, end=_const.YELLOW, back=_const.DARK_CYAN)
 
-    def __init__(self, pos, name, groups=None):
+    def __init__(self, name, groups=None):
         u"""コンストラクタ。
         """
-        super(Rival, self).__init__(pos, self._Form(
-            self.__NAMES[name], self._COLOR, _const.FRAME_RATE), groups)
+        color = _const.CYAN+"#"+_const.YELLOW+"#"+_const.DARK_CYAN
+        super(Rival, self).__init__((0, 0), self._Form(
+            self.__NAMES[name], color, _const.FRAME_RATE), groups)
+        _layouter.Game.set_center(self)
 
     def _generator(self, form):
         u"""文字列画像ジェネレータ。
@@ -292,33 +301,32 @@ class Rival(__Start):
             yield image
 
 
-class Level(__Start):
-    u"""レベルエフェクト。
+class Progress(__Start):
+    u"""進行状態エフェクト。
     """
-    __BASE_TEXT = "Level:#Start!"
-    _COLOR = "{start}#{end}#{back}".format(
-        start=_const.GREEN, end=_const.YELLOW, back=_const.DARK_GREEN)
-
-    def __init__(self, pos, value, groups=None):
+    def __init__(self, value, groups=None):
         u"""コンストラクタ。
         """
-        super(Level, self).__init__(pos, self._Form(
-            value, self._COLOR, _const.FRAME_RATE), groups)
+        color = _const.GREEN+"#"+_const.YELLOW+"#"+_const.DARK_GREEN
+        super(Progress, self).__init__((0, 0), self._Form(
+            value, color, _const.FRAME_RATE), groups)
+        _layouter.Game.set_center(self)
 
     def _generator(self, form):
         u"""文字列画像ジェネレータ。
         """
-        first, last = self.__BASE_TEXT.split("#")
+        first = "Level:"
         first += (
             form.string if int(form.string) < _const.ENDLESS_LIMIT else "??")
         for i in range(1, len(first)+1):
             yield (_string.get_string(
                 first[:i].ljust(len(first)+self._DOT_LENGTH),
                 self._CHAR_SIZE, form.color), (0, 0))
-        for image in self._start_generator(first, last, form):
+        for image in self._start_generator(first, "Start!", form):
             yield image
 
 
+# ---- Result----
 class _Result(_String):
     u"""結果エフェクト。
     """
@@ -346,8 +354,8 @@ class Win(_Result):
     def __init__(self, pos, groups=None):
         u"""コンストラクタ。
         """
-        super(Win, self).__init__(pos, "Win", "{start}#{end}#{back}".format(
-            start=_const.RED, end=_const.YELLOW, back=_const.DARK_RED), groups)
+        color = _const.RED+"#"+_const.YELLOW+"#"+_const.DARK_RED
+        super(Win, self).__init__(pos, "Win", color, groups)
 
 
 class Lose(_Result):
@@ -356,8 +364,8 @@ class Lose(_Result):
     def __init__(self, pos, groups=None):
         u"""コンストラクタ。
         """
-        super(Lose, self).__init__(pos, "Lose", "{start}#{end}#{back}".format(
-            start=_const.BLUE, end=_const.CYAN, back=_const.DARK_BLUE), groups)
+        color = _const.BLUE+"#"+_const.CYAN+"#"+_const.DARK_BLUE
+        super(Lose, self).__init__(pos, "Lose", color, groups)
 
 
 class Draw(_Result):
@@ -366,9 +374,8 @@ class Draw(_Result):
     def __init__(self, pos, groups=None):
         u"""コンストラクタ。
         """
-        super(Draw, self).__init__(pos, "Draw", "{start}#{end}#{back}".format(
-            start=_const.RED, end=_const.BLUE, back=_const.DARK_MAGENTA),
-            groups)
+        color = _const.RED+"#"+_const.BLUE+"#"+_const.DARK_MAGENTA
+        super(Draw, self).__init__(pos, "Draw", color, groups)
 
 
 class Bonus(_Result):
@@ -377,8 +384,6 @@ class Bonus(_Result):
     def __init__(self, pos, sp, groups=None):
         u"""コンストラクタ。
         """
+        color = _const.ORANGE+"#"+_const.YELLOW+"#"+_const.DARK_ORANGE
         super(Bonus, self).__init__(
-            pos, "Bonus:"+str(sp) if 0 < sp else "NotBonus",
-            "{start}#{end}#{back}".format(
-                start=_const.ORANGE, end=_const.YELLOW,
-                back=_const.DARK_ORANGE), groups)
+            pos, "Bonus:"+str(sp) if 0 < sp else "Not Bonus", color, groups)
