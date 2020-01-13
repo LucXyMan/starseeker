@@ -8,15 +8,15 @@ This software is released under BSD license.
 アイテムブロックモジュール。
 スター、パワーアップ、アルカナ。
 """
-import utils.const as _const
 import block as __block
+import utils.const as _const
 
 
 # ---- Star ----
 class __Star(__block.Block):
     u"""スターブロック。
     """
-    _FRAME_NUM = 4
+    _FRAME = 4
     _SCORE = _const.SINGLE_SCORE
     _TARGET_COLOR = "green"
 
@@ -27,12 +27,12 @@ class __Star(__block.Block):
         """
         is_rank_up = False
         for cell in self._get_around(self._CROSS):
-            if cell and cell.is_target(self._TARGETS) and cell.rank_up():
+            if cell.is_target(self._TARGETS) and cell.rank_up():
                 is_rank_up = True
-        if is_rank_up and 0 <= self._state:
-            self._state -= 1
-            if self._state == -1:
+        if is_rank_up:
+            if self._state <= 0:
                 self.change("Normal")
+            self._state -= 1
 
     def rank_up(self):
         u"""スターランクアップ。
@@ -50,8 +50,8 @@ class __Star(__block.Block):
         """
         import utils.counter as __counter
         return (self._scaled_images[
-            __counter.get_frame(self._FRAME_NUM) +
-            self._state*self._FRAME_NUM])
+            __counter.get_frame(self._FRAME) +
+            self._state*self._FRAME])
 
     @property
     def star_type(self):
@@ -63,71 +63,71 @@ class __Star(__block.Block):
 class Jupiter(__Star):
     u"""木星スター。
     """
-    _EFFECT = "blue_line"
+    _EFFECT = _const.JUPITER_EFFECT
     _IMAGES = "jupiter"
     _SMALL_IMAGE = "circle_4"
     _TARGETS = "Mars#Sun"
-    _TYPE = 1
+    _TYPE = 0
 
 
 class Mars(__Star):
     u"""火星スター。
     """
-    _EFFECT = "red_fire"
+    _EFFECT = _const.MARS_EFFECT
     _IMAGES = "mars"
     _SMALL_IMAGE = "circle_1"
     _TARGETS = "Saturn#Sun"
-    _TYPE = 2
+    _TYPE = 1
 
 
 class Saturn(__Star):
     u"""土星スター。
     """
-    _EFFECT = "purple_light"
+    _EFFECT = _const.SATURN_EFFECT
     _IMAGES = "saturn"
     _SMALL_IMAGE = "circle_7"
     _TARGETS = "Venus#Sun"
-    _TYPE = 3
+    _TYPE = 2
 
 
 class Venus(__Star):
     u"""金星スター。
     """
-    _EFFECT = "yellow_line"
+    _EFFECT = _const.VENUS_EFFECT
     _IMAGES = "venus"
     _SMALL_IMAGE = "circle_2"
     _TARGETS = "Mercury#Sun"
-    _TYPE = 4
+    _TYPE = 3
 
 
 class Mercury(__Star):
     u"""水星スター。
     """
-    _EFFECT = "blue_bubble"
+    _EFFECT = _const.MERCURY_EFFECT
     _IMAGES = "mercury"
     _SMALL_IMAGE = "circle_6"
     _TARGETS = "Jupiter#Sun"
-    _TYPE = 5
+    _TYPE = 4
 
 
 class Moon(__Star):
     u"""月スター。
     """
-    _EFFECT = "black_fire"
+    _EFFECT = _const.MOON_EFFECT
     _IMAGES = "moon"
     _SMALL_IMAGE = "circle_9"
     _TARGETS = "Mars#Mercury#Jupiter#Venus#Saturn"
-    _TYPE = 6
+    _TYPE = 5
 
 
 class Sun(__Star):
     u"""太陽スター。
     """
-    _EFFECT = "yellow_light"
+    _EFFECT = _const.SUN_EFFECT
     _IMAGES = "sun"
     _SMALL_IMAGE = "circle_8"
     _TARGETS = "Moon"
-    _TYPE = 7
+    _TYPE = 6
 
 
 # ---- Shard ----
@@ -135,7 +135,7 @@ class __Shard(__block.Block):
     u"""パワーアップブロック。
     """
     _SCORE = _const.SINGLE_SCORE
-    _FRAME_NUM = 4
+    _FRAME = 4
     _TARGET_COLOR = "magenta"
 
     @property
@@ -150,7 +150,7 @@ class Life(__Shard):
     """
     _IMAGES = "life_shards"
     _SMALL_IMAGE = "diamond_2"
-    _TYPE = 1
+    _TYPE = 0
 
 
 class Power(__Shard):
@@ -158,7 +158,7 @@ class Power(__Shard):
     """
     _IMAGES = "power_shards"
     _SMALL_IMAGE = "diamond_1"
-    _TYPE = 2
+    _TYPE = 1
 
 
 class Protect(__Shard):
@@ -166,7 +166,7 @@ class Protect(__Shard):
     """
     _IMAGES = "protect_shards"
     _SMALL_IMAGE = "diamond_6"
-    _TYPE = 3
+    _TYPE = 2
 
 
 class Speed(__Shard):
@@ -174,14 +174,14 @@ class Speed(__Shard):
     """
     _IMAGES = "speed_shards"
     _SMALL_IMAGE = "diamond_4"
-    _TYPE = 4
+    _TYPE = 3
 
 
 # ---- Card ----
 class __Card(__block.Block):
     u"""カードブロック。
     """
-    _FRAME_NUM = 6
+    _FRAME = 6
     _SCORE = _const.SINGLE_SCORE
     _TARGET_COLOR = "blue"
 

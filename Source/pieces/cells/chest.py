@@ -8,10 +8,10 @@ This software is released under BSD license.
 宝箱・鍵ブロックモジュール。
 """
 import random as _random
-import utils.const as _const
 import block as __block
 import irregular as __irregular
 import monster as __monster
+import utils.const as _const
 
 
 # ---- Key ----
@@ -87,7 +87,7 @@ class GoldKey(Key):
 class _Box(__block.Block):
     u"""箱ブロック。
     """
-    _OPENED_STATE = 255
+    _OPENED_STATE = 15
     _EFFECT = "yellow_light#blue_light#green_light#purple_light"
 
     def _change_mimic(self):
@@ -137,7 +137,7 @@ class _Box(__block.Block):
         return self._state == self._OPENED_STATE
 
 
-# ---- Chest ----
+# ------ Chest ------
 class _Chest(_Box):
     u"""宝箱ブロック。
     """
@@ -158,7 +158,7 @@ class IronChest(_Chest):
     _IMAGES = "blue_chest"
     _SMALL_IMAGE = "star_0"
     _MAX_HP = 0
-    _RANK = 1
+    _RANK = 0
 
     def crack(self, _flag=0):
         u"""クラック処理。
@@ -213,7 +213,7 @@ class BronzeChest(_Locked):
     _SMALL_IMAGE = "star_1"
     _MIMIC = "BronzeMimic"
     _MAX_HP = 3
-    _RANK = 2
+    _RANK = 1
 
 
 class SilverChest(_Locked):
@@ -224,7 +224,7 @@ class SilverChest(_Locked):
     _SMALL_IMAGE = "star_8"
     _MIMIC = "SilverMimic"
     _MAX_HP = 1
-    _RANK = 3
+    _RANK = 2
 
 
 class GoldChest(_Locked):
@@ -235,7 +235,7 @@ class GoldChest(_Locked):
     _SMALL_IMAGE = "star_2"
     _MIMIC = "GoldMimic"
     _MAX_HP = 0
-    _RANK = 4
+    _RANK = 3
 
 
 class Pandora(_Box):
@@ -249,7 +249,7 @@ class Pandora(_Box):
     _TARGET_COLOR = "red"
     _MIMIC = "PandoraMimic"
     _MAX_HP = 0
-    _RANK = 5
+    _RANK = 4
 
     def __init__(self, point, state, is_virtual):
         u"""コンストラクタ。
@@ -279,15 +279,16 @@ class Pandora(_Box):
         return self.is_mimic or self.is_opened
 
 
-# ---- Mimic ----
+# ------ Mimic ------
 class __Mimic(__irregular.Invincible, __monster.Mover):
     u"""ミミックブロック。
     フィールド上を動いてブロックとアイテムを破壊する。
     鍵ブロックで封印できる。
     """
-    _FRAME_NUM = 4
+    _FRAME = 4
     _EFFECT = "white_fire"
     _MALIGNANCY = _const.HIGH_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
     def crack(self, flag=0):
         u"""強制クラックか鍵があれば破壊できる。

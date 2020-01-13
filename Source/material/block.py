@@ -14,7 +14,7 @@ def init(container):
     """
     import pygame as __pygame
     import utils.image as __image
-    global __cells
+    global __blocks
 
     def __target_proc():
         u"""ターゲット画像作成。
@@ -26,19 +26,19 @@ def init(container):
                 u"""基本ブロックエッジ画像作成。
                 """
                 surf = __pygame.Surface((16, 16))
-                for name, adjust in (
+                for name, offset in (
                     ("top_edge", (0, 1)), ("right_edge", (-1, 0)),
                     ("bottom_edge", (0, -1)), ("left_edge", (1, 0)),
                     ("topright_edge", (-1, 1)), ("bottomright_edge", (-1, -1)),
                     ("bottomleft_edge", (1, -1)), ("topleft_edge", (1, 1))
                 ):
                     key = color+"_"+name
-                    __cells[key] = ()
-                    for frame in __cells[color+"_"+"target"]:
+                    __blocks[key] = ()
+                    for frame in __blocks[color+"_"+"target"]:
                         copy = __image.copy(frame)
                         copy.set_colorkey(__pygame.Color("0x000000"))
-                        copy.blit(surf, adjust)
-                        __cells[key] += copy,
+                        copy.blit(surf, offset)
+                        __blocks[key] += copy,
 
             def __create_multi_edge():
                 u"""複合ブロックエッジ画像作成。
@@ -56,15 +56,15 @@ def init(container):
                      ("top_edge", "right_edge", "left_edge"))
                 ):
                     key = color+"_"+name
-                    __cells[key] = ()
+                    __blocks[key] = ()
                     for edges in zip(*(
-                        __cells[color+"_"+part] for part in parts
+                        __blocks[color+"_"+part] for part in parts
                     )):
                         surf = __pygame.Surface((16, 16))
                         surf.set_colorkey(__pygame.Color("0x000000"))
                         for edge in edges:
                             surf.blit(edge, (0, 0))
-                        __cells[key] += surf,
+                        __blocks[key] += surf,
             __create_base_edge()
             __create_multi_edge()
         source = __image.load(container.get("target.png"))
@@ -72,7 +72,7 @@ def init(container):
             "white_target", "red_target", "yellow_target", "green_target",
             "magenta_target", "orange_target", "blue_target"
         )):
-            __cells[name] = __image.segment(
+            __blocks[name] = __image.get_segment(
                 __image.get_another_color(source, i, 8), (4, 1))
         for color in (
             "white", "red", "yellow", "green", "magenta", "orange", "blue"
@@ -84,14 +84,14 @@ def init(container):
         """
         source = __image.load(container.get("basic.png"))
         images = [
-            __image.segment(
+            __image.get_segment(
                 __image.get_another_color(source, i, 8), (4, 1)
             ) for i in range(16)]
-        __cells["normal"] = reduce(
+        __blocks["normal"] = reduce(
             lambda x, y: x+y, (image[0:1] for image in images[::2]))
-        __cells["solid"] = reduce(
+        __blocks["solid"] = reduce(
             lambda x, y: x+y, (image[::2] for image in images[1:8:2]))
-        __cells["adamant"] = reduce(lambda x, y: x+y, images[9:16:2])
+        __blocks["adamant"] = reduce(lambda x, y: x+y, images[9:16:2])
 
     def __star_proc():
         u"""スター画像加工。
@@ -100,7 +100,7 @@ def init(container):
         for i, name in enumerate((
             "mars", "jupiter", "mercury", "venus", "saturn", "sun", "moon"
         )):
-            __cells[name] = __image.segment(
+            __blocks[name] = __image.get_segment(
                 __image.get_another_color(source, i), (4, 3))
 
     def __daemon_proc():
@@ -108,18 +108,18 @@ def init(container):
         """
         source = __image.load(container.get("daemon.png"))
         images = [__image.get_another_color(source, i) for i in range(9)]
-        _images = __image.segment(images[3], (4, 2))
-        __cells["gargoyle"] = _images[0:1]
+        _images = __image.get_segment(images[3], (4, 2))
+        __blocks["gargoyle"] = _images[0:1]
         for name, image in zip((
             "ice_ghost", "poison_ghost", "fire_ghost"
         ), images[:3]):
-            _images = __image.segment(image, (4, 2))
-            __cells[name] = _images[4:8]
+            _images = __image.get_segment(image, (4, 2))
+            __blocks[name] = _images[4:8]
         for name, image in zip((
             "maxwell", "eater", "arch_demon", "demon", "king_demon"
         ), images[4:]):
-            _images = __image.segment(image, (4, 2))
-            __cells[name] = _images[0:4]
+            _images = __image.get_segment(image, (4, 2))
+            __blocks[name] = _images[0:4]
 
     def __slime_proc():
         u"""スライム・きのこ画像加工。
@@ -128,9 +128,9 @@ def init(container):
         for i, name, in enumerate((
             "slime", "large_matango", "tired", "matango"
         )):
-            images = __image.segment(
+            images = __image.get_segment(
                 __image.get_another_color(source, i), (4, 2))
-            __cells[name] = (
+            __blocks[name] = (
                 images[4:] if i in (1, 3) else images[3:4] if i == 2 else
                 images[1:2]+images[:3])
 
@@ -142,16 +142,16 @@ def init(container):
             "magma", "ice", "", "Corrosion", "acid", "poison", "water"
         )):
             if name:
-                images = __image.segment(
+                images = __image.get_segment(
                     __image.get_another_color(source, i), (4, 2))
-                __cells[name] = images[4:] if i == 1 else images[:4]
+                __blocks[name] = images[4:] if i == 1 else images[:4]
 
     def __stone_proc():
         u"""石化画像加工。
         """
         source = __image.load(container.get("stone.png"))
         for i, name in enumerate(("chocolate", "stone")):
-            __cells[name] = __image.segment(
+            __blocks[name] = __image.get_segment(
                 __image.get_another_color(source, i, 8), (4, 4))
 
     def __other_proc():
@@ -159,9 +159,9 @@ def init(container):
         """
         source = __image.load(container.get("other.png"))
         for i, name in enumerate(("rip", "ruin")):
-            images = __image.segment(
+            images = __image.get_segment(
                 __image.get_another_color(source, i), (4, 2))
-            __cells[name] = images[i],
+            __blocks[name] = images[i],
 
     def __shards_proc():
         u"""欠片画像加工。
@@ -170,21 +170,21 @@ def init(container):
         for i, name in enumerate((
             "speed_shards", "power_shards", "protect_shards", "life_shards"
         )):
-            images = __image.segment(
+            images = __image.get_segment(
                 __image.get_another_color(source, i), (4, 2))
-            __cells[name] = images[4:]
+            __blocks[name] = images[4:]
 
     def __next_proc():
         u"""ネクスト表示で使用する画像加工。
         """
         source = __image.load(container.get("small.png"))
         for i in range(10):
-            images = __image.segment(
+            images = __image.get_segment(
                 __image.get_another_color(source, i, 8), (4, 2), (8, 8))
             for j, name in enumerate((
                 "square", "circle", "diamond", "star", "rect", "!", "?"
             )):
-                __cells[name+"_"+str(i)] = images[j]
+                __blocks[name+"_"+str(i)] = images[j]
 
     def __icon_proc():
         u"""アイコン画像を使用するブロック画像加工。
@@ -197,21 +197,21 @@ def init(container):
             ("cyan", 7, 0, 0), ("purple", 3, 0, 0)
         ):
             icon = _icon.get(0x600 | color)
-            __cells[name+"_key"] = tuple([
+            __blocks[name+"_key"] = tuple([
                 __string.get_subscript(icon, str(i)) for
                 i in range(ky_rng, 0, -1)]+[icon])
             icon = _icon.get(0x700 | color)
-            __cells[name+"_chest"] = tuple([
+            __blocks[name+"_chest"] = tuple([
                 __string.get_subscript(icon, str(i)) for
                 i in range(chst_rng, 0, -1)]+[icon, _icon.get(0x800 | color)])
-            __cells[name+"_mimic"] = tuple([
+            __blocks[name+"_mimic"] = tuple([
                 _icon.get(i << 8 | color) for i in (7, 9, 10, 9)])
-            __cells[name+"_card"] = tuple([
+            __blocks[name+"_card"] = tuple([
                 _icon.get(i << 8 | color) for i in range(2, 6)]+[
                     __pygame.transform.flip(
                         _icon.get(i << 8 | color), True, False
                     ) for i in range(4, 2, -1)])
-    __cells = {"dummy": (__image.get_clear(__pygame.Surface((16, 16))),)}
+    __blocks = {"dummy": (__image.get_clear(__pygame.Surface((16, 16))),)}
     for func in (
         __target_proc, __basic_proc, __star_proc, __daemon_proc,
         __slime_proc, __nature_proc, __stone_proc, __other_proc,
@@ -223,4 +223,4 @@ def init(container):
 def get(key):
     u"""ブロック画像取得。
     """
-    return __cells[key]
+    return __blocks[key]

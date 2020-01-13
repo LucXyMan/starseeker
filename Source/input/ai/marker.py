@@ -63,13 +63,12 @@ class Marker(object):
                     __signal()
                     result = []
                     old_state = self.__piece.state
-                    if (
-                        self.__piece.test_rotate(self.__field, clock_wise) ==
-                        _const.FLEXIBLE
-                    ):
-                        result = __mark(
-                            cmds+[_command.Breadcrumb(self.__piece.state)],
-                            founds)
+                    if self.__piece.detect_rotation(
+                        self.__field, clock_wise
+                    ) == _const.FLEXIBLE:
+                        result = __mark(cmds+[
+                            _command.Breadcrumb(self.__piece.state)
+                        ], founds)
                     self.__piece.state = old_state
                     return result
                 is_prioritize_rotation = (

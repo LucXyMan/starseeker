@@ -12,32 +12,21 @@ This software is released under BSD license.
 def init():
     u"""モジュール初期化。
     """
-    import utils.const as __const
     import catalyst as __catalyst
     import sorceries as __sorceries
     import special as __special
     import support as __support
+    import utils.const as __const
+    import utils.general as __general
     LOW_POWER = 4
     MID_POWER = LOW_POWER << 1
     HIGH_POWER = MID_POWER+(MID_POWER >> 1)
     VERY_HIGH_POWER = MID_POWER << 1
-
-    def __get_name(skill):
-        u"""スキル名取得。
-        """
-        name, _ = skill.split("#")
-        return name
-
-    def __get_description(skill):
-        u"""スキル説明取得。
-        """
-        _, description = skill.split("#")
-        return description
     __specials = (
         __sorceries.Forming(
             u"###キノコ###"
             u"相手のブロックをキノコに###" +
-            __const.MATANGO_EFFECT,
+            __const.MATANGO_CHANGE,
             (1, 0), True, MID_POWER, catalyst=__catalyst.Catalyst(
                 __sorceries.Forming,
                 u"スライム####マナプール###"
@@ -58,8 +47,8 @@ def init():
             (4, 0), (True, 0B0010)),
         __sorceries.Forming(
             u"###マグマ###"
-            u"相手のブロックをマグマに###"
-            u"Magma##"+__const.BASIC_NAMES,
+            u"相手のブロックをマグマに###" +
+            __const.MAGMA_CHANGE,
             (1, 1), True, MID_POWER, catalyst=__catalyst.Catalyst(
                 __sorceries.Forming,
                 u"サモンデーモン####インフェルノ###"
@@ -67,7 +56,7 @@ def init():
                 u"FireGhost##"+__const.BASIC_NAMES, True, LOW_POWER)),
         __sorceries.Delete(
             u"###インシネレイト###"
-            u"相手のカードを削除/削除分のスター減少",
+            u"相手のカードを削除/削除分x1のスター減少",
             (2, 1), True, power=1),
         __sorceries.Forming(
             u"###シャーマニズム###"
@@ -86,7 +75,7 @@ def init():
         __sorceries.Poison(
             u"###ポイズン###"
             u"相手のブロックをポイズンに/毒状態異常###" +
-            __const.POISON_EFFECT,
+            __const.POISON_CHANGE,
             (2, 2), (True, False), MID_POWER),
         __sorceries.Forming(
             u"###ウィッチクラフト###"
@@ -105,7 +94,7 @@ def init():
         __sorceries.Forming(
             u"###アシッド###"
             u"相手のブロックをアシッドに###" +
-            __const.ACID_EFFECT,
+            __const.ACID_CHANGE,
             (1, 3), True, MID_POWER, catalyst=__catalyst.Catalyst(
                 __sorceries.Break,
                 u"ポイズン####アクアレギア###"
@@ -125,14 +114,14 @@ def init():
             u"相手の武器封印",
             (4, 3), (True, 0B0001)),
         __sorceries.Freeze(
-            u"###アイス###"
-            u"相手のブロックをアイスに/凍結状態異常###"
-            u"Ice##"+__const.BASIC_NAMES,
+            u"###フリーズ###"
+            u"相手のブロックをアイスに/凍結状態異常###" +
+            __const.ICE_CHANGE,
             (1, 4), (True, False), MID_POWER),
         __sorceries.Forming(
             u"###スライム###"
-            u"自身のブロックをスライムに###"
-            u"Slime##"+__const.BASIC_NAMES,
+            u"自身のブロックをスライムに###" +
+            __const.SLIME_CHANGE,
             (2, 4), False, HIGH_POWER),
         __sorceries.Forming(
             u"###ツナミ###"
@@ -164,7 +153,7 @@ def init():
         __sorceries.Forming(
             u"###サモンデーモン###"
             u"相手フィールドにイーターを召喚###" +
-            __const.BLOCK_EATER_EFFECT,
+            __const.BLOCK_EATER_CHANGE,
             (4, 5), True, 0, catalyst=__catalyst.Catalyst(
                 __sorceries.Forming,
                 u"アンロック####サタンズゲート###"
@@ -196,45 +185,72 @@ def init():
             u"Matango##"+__const.BASIC_NAMES,
             (1, 0), True, HIGH_POWER),
         __sorceries.Forming(
+            __const.SHIELD_ARCANUM+u"###カミカゼ###"
+            u"自身のブロックを速さの欠片に###" +
+            __const.SPEED_CHANGE,
+            (1, 0), False, MID_POWER),
+        __sorceries.Forming(
             __const.SHIELD_ARCANUM+u"###バーサーク###"
             u"自身のブロックを力の欠片に###" +
-            __const.POWER_EFFECT,
+            __const.POWER_CHANGE,
             (1, 1), False, MID_POWER),
+        __sorceries.Spawn(
+            __const.SHIELD_ARCANUM+u"###イラプション###"
+            u"自身にマグマゼリー生成###マグマゼリー",
+            (1, 1), False, is_whole=True),
         __sorceries.Poison(
             __const.SHIELD_ARCANUM+u"###トリカブト###"
             u"相手フィールドに毒霊を召喚/毒状態異常###" +
             u"PoisonGhost##"+__const.BASIC_NAMES,
             (1, 2), (True, True), LOW_POWER),
+        __sorceries.Forming(
+            __const.SHIELD_ARCANUM+u"###コラプション###"
+            u"相手のアイテムをポイズンに###" +
+            u"Poison##"+__const.ITEM_NAMES,
+            (1, 2), True, HIGH_POWER),
         __sorceries.Break(
             __const.SHIELD_ARCANUM+u"###グレイプニール###"
             u"相手の防具を封印",
             (1, 3), (True, 0B1110)),
+        __sorceries.Forming(
+            __const.SHIELD_ARCANUM+u"###ゴールドラッシュ###"
+            u"自身のブロックを金スターに###" +
+            __const.VENUS_CHANGE,
+            (1, 3), False, HIGH_POWER),
         __sorceries.Freeze(
             __const.SHIELD_ARCANUM+u"###アブソリュートゼロ###"
             u"相手フィールドに氷霊を召喚/凍結状態異常###"
             u"IceGhost##"+__const.BASIC_NAMES,
             (1, 4), (True, True), LOW_POWER),
+        __sorceries.Delete(
+            __const.SHIELD_ARCANUM+u"###サイレント###"
+            u"相手のカードを削除/削除分x2のスター減少",
+            (1, 4), True, power=2),
         __sorceries.Forming(
             __const.SHIELD_ARCANUM+u"###サバト###"
             u"相手フィールドにデーモンを召喚###"
             u"BlockDemon##"+__const.BASIC_NAMES,
             (1, 5), True, LOW_POWER),
+        __sorceries.Critical(
+            __const.SHIELD_ARCANUM+u"###カタストロフィ###"
+            u"3/4の確率で相手のクリーチャー破壊",
+            (1, 5), (True, False), hit_rate=3/4.),
         __sorceries.Recovery(
             __const.SHIELD_ARCANUM+u"###アブゾーブ###"
             u"自身の全クリーチャーを全回復/状態異常除去",
             (1, 6), (False, True), 1),
+        __sorceries.Attract(
+            __const.SHIELD_ARCANUM+u"###テンプテーション###"
+            u"2/3の確率で相手のクリーチャーを引き抜く",
+            (1, 6), True, hit_rate=2/3.),
         __support.Enchant(
             u"ヴェノムエッジ###"
             u"ポイズン攻撃追加###" +
-            __const.POISON_EFFECT),
+            __const.POISON_CHANGE),
         __support.Enchant(
             u"ラスティソード###"
             u"シャードをアシッドに###"
             u"Acid##"+__const.SHARD_NAMES),
-        __support.Enchant(
-            u"イーヴィルアイ###"
-            u"スターをストーンに###" +
-            u"Stone##"+__const.STAR_NAMES),
         __support.Enchant(
             u"フリーズスター###"
             u"スターをアイスに###"
@@ -246,11 +262,11 @@ def init():
         __support.Enchant(
             u"ファンガス###"
             u"キノコ攻撃追加###" +
-            __const.MATANGO_EFFECT),
+            __const.MATANGO_CHANGE),
         __support.Persistence(
             u"フォースシード###"
             u"木スター生成###" +
-            __const.JUPITER_EFFECT, 0b111),
+            __const.JUPITER_CHANGE, 0b111),
         __support.Persistence(
             u"ファイアブリンガー###"
             u"カードを火スターに###"
@@ -258,7 +274,7 @@ def init():
         __support.Persistence(
             u"アースパワー###"
             u"土スター生成###" +
-            __const.SATURN_EFFECT, 0b111),
+            __const.SATURN_CHANGE, 0b111),
         __support.Persistence(
             u"ミダスタッチ###"
             u"カードを金スターに###"
@@ -266,30 +282,46 @@ def init():
         __support.Persistence(
             u"オーシャンソウル###"
             u"水スター生成###" +
-            __const.MERCURY_EFFECT, 0b111),
+            __const.MERCURY_CHANGE, 0b111),
         __support.Persistence(
             u"ネクロノミコン###"
             u"月スター生成###" +
-            __const.MOON_EFFECT, 0b111),
+            __const.MOON_CHANGE, 0b111),
         __support.Persistence(
             u"ホーリーグレイル###"
             u"太陽スター生成###" +
-            __const.SUN_EFFECT, 0b111),
-        __support.Skill(u"{name}##{description}##S##{name}".format(
-            name=__get_name(__const.SOUL_EAT_SKILL),
-            description=__get_description(__const.SOUL_EAT_SKILL))),
+            __const.SUN_CHANGE, 0b111),
+        __support.Persistence(
+            u"ライフマッシュ###"
+            u"キノコを生命の欠片に###" +
+            u"Life##Matango", 0b1),
+        __support.Persistence(
+            u"バーニングパワー###"
+            u"マグマを力の欠片に###" +
+            u"Power##Magma", 0b1),
+        __support.Persistence(
+            u"アイスウォール###"
+            u"アイスを守りの欠片に###" +
+            u"Protect##Ice", 0b1),
+        __support.Persistence(
+            u"ドーピング###"
+            u"ポイズンを速さの欠片に###" +
+            u"Speed##Poison", 0b1),
         __support.Skill(
             u"{name}##{description}##P##{name}".format(
-                name=__get_name(__const.PURIFY_SKILL),
-                description=__get_description(__const.PURIFY_SKILL))),
+                name=__general.get_skill_names(__const.PURIFY_SKILL),
+                description=__general.get_skill_description(
+                    __const.PURIFY_SKILL))),
         __support.Skill(
             u"{name}##{description}##R##{name}".format(
-                name=__get_name(__const.REVERSE_SORCERY_SKILL),
-                description=__get_description(__const.REVERSE_SORCERY_SKILL))),
+                name=__general.get_skill_names(__const.REVERSE_SORCERY_SKILL),
+                description=__general.get_skill_description(
+                    __const.REVERSE_SORCERY_SKILL))),
         __support.Skill(
             u"{name}##{description}##A##{name}".format(
-                name=__get_name(__const.ANTI_SUMMONING_SKILL),
-                description=__get_description(__const.ANTI_SUMMONING_SKILL))))
+                name=__general.get_skill_names(__const.ANTI_SUMMONING_SKILL),
+                description=__general.get_skill_description(
+                    __const.ANTI_SUMMONING_SKILL))))
     __jokers = (
         __sorceries.Spawn(
             __const.JOKER_ARCANUM+u"###リバースサモン###"
@@ -301,7 +333,7 @@ def init():
             (1, -1), (False, 0B1111)),
         __sorceries.Delete(
             __const.JOKER_ARCANUM+u"###オールデリート###"
-            u"自身の手札破棄",
+            u"自身のカードを削除/削除分x4のスター減少",
             (1, -1), False, power=4),
         __sorceries.Critical(
             __const.JOKER_ARCANUM+u"###ジェノサイド###"

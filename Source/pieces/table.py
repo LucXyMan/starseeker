@@ -172,14 +172,14 @@ class Table(object):
             for x in range(self.width):
                 __set_hole(x)
 
-        def __set_adjacent():
+        def __set_adjacent_spaces():
             u"""隣接スペース設定。
             フィールド上ホールの、横方向に存在する空白を隣接スペースとする。
             """
             def __get_side_spaces(point):
                 u"""横方向のスペースセル取得。
                 """
-                def __get_ranging(cells):
+                def __get_consecutive_space(cells):
                     u"""連続するスペースセル取得。
                     """
                     result = []
@@ -192,13 +192,13 @@ class Table(object):
                 x, y = point
                 line = self.get_line(y)
                 return tuple(
-                    __get_ranging(line[x+1:]) +
-                    __get_ranging(line[:x][::-1]))
+                    __get_consecutive_space(line[x+1:]) +
+                    __get_consecutive_space(line[:x][::-1]))
             for cell in (cell for cell in self.__cells if cell.is_hole):
                 for space in __get_side_spaces(cell.point.topleft):
                     space.state = 3
         __set_holes()
-        __set_adjacent()
+        __set_adjacent_spaces()
 
     # ---- Property ----
     @property
@@ -257,7 +257,7 @@ class Table(object):
     def has_alone_chest(self):
         u"""ペア無し宝箱判定。
         """
-        def __has_alone(line):
+        def __has_alone_chest(line):
             u"""ライン上にペアの鍵が無い宝箱が存在する場合に真。
             """
             import utils.const as __const
@@ -265,4 +265,4 @@ class Table(object):
                 cell.is_locked for cell in line) and all(
                 cell.name not in __const.KEY_NAMES.split("#") for cell in line)
         lines = (self.get_line(y) for y in range(self.height))
-        return any(__has_alone(line) for line in lines)
+        return any(__has_alone_chest(line) for line in lines)

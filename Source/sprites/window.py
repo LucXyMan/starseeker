@@ -23,15 +23,15 @@ class Window(_pygame.sprite.DirtySprite):
         self.image.set_colorkey(_pygame.Color("0x000000"))
         self.rect = self.image.get_rect()
         self.rect.topleft = pos
-        self._decorate = 1, 1, 1, 1
+        self._decoration = 0b1111
         self._is_light = False
         __decorator.set_decorator(self)
 
     @property
-    def decorate(self):
+    def decoration(self):
         u"""デコレータ状態取得。
         """
-        return self._decorate
+        return self._decoration
 
     @property
     def is_light(self):

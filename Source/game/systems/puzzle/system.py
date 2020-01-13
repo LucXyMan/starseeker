@@ -16,8 +16,8 @@ class System(object):
     ペアレント、ネクスト、ホールド、オペレート、フィールドを管理する。
     """
     __slots__ = (
-        "__core", "__del_lines", "__drop_point", "__fall_progress", "__field",
-        "__hold", "__is_completed", "__minimap", "__next", "__parent",
+        "__core", "__drop_point", "__fall_progress", "__field", "__hold",
+        "__is_completed", "__minimap", "__next", "__one_pieces", "__parent",
         "__piece", "__pressure", "__window")
     __WINDOW_MIN_ALPHA = 0xB0
 
@@ -45,7 +45,7 @@ class System(object):
                 acid = "Acid", -1, (1, 1)
                 key = "GoldKey", -1, (1, 1)
                 chest = "GoldChest", -1, (1, 1)
-                opened = "GoldChest", 255, (1, 1)
+                opened = "GoldChest", 15, (1, 1)
                 mimic = "GoldChest", 16, (1, 1)
                 t_spin_test = (
                     ((0, 6), x1),  ((1, 6), x1), ((2, 6), x1),
@@ -95,7 +95,7 @@ class System(object):
         self.__is_completed = False
         self.__fall_progress = 0
         self.__pressure = 0
-        self.__del_lines = []
+        self.__one_pieces = []
         self.__core = core
         self.__parent = parent
         self.__next = __next.Next(level.deck, self.__core.id)
@@ -127,11 +127,9 @@ class System(object):
         u"""ピース進行。
         time回ピースを進める。
         """
-        if hasattr(self, "__piece"):
-            self.__piece.clear()
         for _ in range(time):
             pattern = self.__next.forward(self.__parent.get_pattern(level_up))
-        self.__piece = _pieces.Dropping(pattern, self.__drop_point)
+        self.__piece = _pieces.Falling(pattern, self.__drop_point)
         self.__window.piece = self.__piece
         self.update_window()
 
@@ -143,7 +141,7 @@ class System(object):
         if self.__core.thinker:
             self.__core.thinker.is_changed = True
 
-    # ---- Fall ----
+    # ---- Falling ----
     def fall(self):
         u"""ピース落下処理。
         """
@@ -151,24 +149,24 @@ class System(object):
             if self.__fall_progress < _const.FRAME_RATE:
                 self.__fall_progress += 1
             else:
-                self.__core.command_input(_const.DOWN_COMMAND)
+                self.__core.input_command(_const.DOWN_COMMAND)
                 self.__fall_progress = 0
 
-    def fall_clear(self):
+    def clear_fall(self):
         u"""ファール進行を0に。
         """
         self.__fall_progress = 0
 
     # ---- Delete Line ----
-    def del_line_plus(self, line):
-        u"""消去ライン追加。
+    def extend_line(self, line):
+        u"""消去したライン追加。
         """
-        self.__del_lines.extend(line)
+        self.__one_pieces.extend(line)
 
-    def del_line_clear(self):
+    def clear_line(self):
         u"""消去ライン初期化。
         """
-        self.__del_lines = []
+        self.__one_pieces = []
 
     # ---- Update ----
     def update_parameter(self):
@@ -196,19 +194,19 @@ class System(object):
         def __update_window():
             u"""ウィンドウの値を更新。
             """
+            self.__window.ghost = self.__piece.get_target(self.__field)
             self.__window.update_area()
             if _const.IS_WINDOW_TRANSPARENT:
                 diff = self.__field.highest+self.__window.difference
                 height = (
-                    self.__field.height if self.__field.height < diff else
-                    diff)
+                    self.__field.height if
+                    self.__field.height < diff else diff)
                 alpha = int(height/float(self.__field.height)*0xFF)
                 self.__window.image.set_alpha(
-                    alpha if self.__WINDOW_MIN_ALPHA < alpha else
-                    self.__WINDOW_MIN_ALPHA)
+                    alpha if self.__WINDOW_MIN_ALPHA <
+                    alpha else self.__WINDOW_MIN_ALPHA)
             else:
                 self.__window.image.set_alpha(None)
-        self.__window.ghost = self.__piece.get_target(self.__field)
         __update_minimap()
         __update_window()
 
@@ -226,10 +224,10 @@ class System(object):
         return self.__drop_point
 
     @property
-    def del_lines(self):
+    def one_pieces(self):
         u"""消去したラインを取得。
         """
-        return self.__del_lines
+        return self.__one_pieces
 
     # ------ Piece ------
     @property

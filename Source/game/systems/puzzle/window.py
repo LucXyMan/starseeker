@@ -9,10 +9,10 @@ This software is released under BSD license.
 """
 import pygame as _pygame
 import utils.const as _const
-import sprites as _sprites
+import sprites as __sprites
 
 
-class _Cell(_sprites.Window):
+class __Cell(__sprites.Window):
     u"""セルウィンドウ。
     """
     @property
@@ -28,7 +28,7 @@ class _Cell(_sprites.Window):
         self._piece = value
 
 
-class Next(_Cell):
+class Next(__Cell):
     u"""ネクストウィンドウ。
     """
     __GRID = _const.GRID >> 1
@@ -37,8 +37,9 @@ class Next(_Cell):
         u"""コンストラクタ。
         """
         rect = _pygame.Rect(*param)
-        super(Next, self).__init__(rect.topleft, _pygame.Surface(rect.size))
-        self.image.fill(_pygame.Color("0x000000"))
+        surf = _pygame.Surface(rect.size)
+        surf.fill(_pygame.Color("0x000000"))
+        super(Next, self).__init__(rect.topleft, surf)
 
     @property
     def piece(self):
@@ -57,16 +58,15 @@ class Next(_Cell):
             for block in self._piece.blocks:
                 block.update()
                 x, y, w, h = block.point
-                self.image.blit(
-                    _pygame.transform.scale(
-                        block.get_next_image(), (w*self.__GRID, h*self.__GRID)
-                    ), (x*self.__GRID, y*self.__GRID))
+                self.image.blit(_pygame.transform.scale(
+                    block.get_next_image(), (w*self.__GRID, h*self.__GRID)
+                ), (x*self.__GRID, y*self.__GRID))
         self._piece = value
         self.image.fill(_pygame.Color("0x000000"))
         __write_blocks()
 
 
-class Field(_Cell):
+class Field(__Cell):
     u"""フィールドウィンドウ。
     """
     __X_GRID = _const.GRID >> 1
@@ -139,24 +139,21 @@ class Field(_Cell):
 
         def __update_edge():
             u"""デコレータ処理。
-            デコレータの透過状態設定。
             """
-            if hasattr(self, "_piece"):
-                self._decorate = (
-                    1 if self.__whole_rect.top == 0 else 0,
-                    1 if self.__whole_rect.right == self.rect.width else 0,
-                    1 if self.__whole_rect.bottom == self.rect.height else 0,
-                    1 if self.__whole_rect.left == 0 else 0)
-            else:
-                self._decorate = 0, 0, 0, 0
+            self._decoration = (
+                (1 if self.__whole_rect.top == 0 else 0) +
+                (2 if self.__whole_rect.right == self.rect.width else 0) +
+                (4 if self.__whole_rect.bottom == self.rect.height else 0) +
+                (8 if self.__whole_rect.left == 0 else 0))
         self.__whole_image.fill(_pygame.Color("0x000000"))
         if hasattr(self, "_piece"):
             __write_blocks()
             __write_effects()
+            __update_edge()
             self.image.blit(self.__whole_image, (0, 0), self.__area)
         else:
+            self._decoration = 0b0000
             self.image.blit(self.__whole_image, (0, 0))
-        __update_edge()
 
     # ---- Property ----
     @property

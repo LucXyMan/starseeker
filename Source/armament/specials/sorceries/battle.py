@@ -24,25 +24,24 @@ class Break(_sorcery.Sorcery):
         super(Break, self).__init__(string, cost, is_agrsv, catalyst)
         self.__target = int(_target)
 
-    def is_usable(self, params):
-        u"""使用可能判定。
-        """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
-        is_fulfill = bool(
-            (param.equip_broken_state ^ self.__target) & self.__target)
-        return (
-            super(Break, self).is_usable((params[0], params[1])) and
-            is_fulfill)
-
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        for i, item in enumerate(systems[0].battle.player.equip):
-            if 1 << i & self.__target:
-                item.break_()
+        target, _ = self._get_target(systems, is_reverse)
+        is_broken = False
+        for i, item in enumerate(target.battle.player.equip):
+            if 1 << i & self.__target and item.break_():
+                is_broken = True
+        if is_broken:
+            target.update()
+
+    def is_available(self, params):
+        u"""使用可能判定。
+        """
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
+        is_fulfill = bool(
+            (target.equip_broken_state ^ self.__target) & self.__target)
+        return super(Break, self).is_available(params) and is_fulfill
 
 
 class Delete(_sorcery.Sorcery):
@@ -59,23 +58,23 @@ class Delete(_sorcery.Sorcery):
         super(Delete, self).__init__(string, cost, is_agrsv, catalyst)
         self.__power = power
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        for _ in range(systems[0].battle.destroy()*self.__power):
-            if not systems[0].resorce.disappear():
-                break
+        target, _ = self._get_target(systems, is_reverse)
+        hand = target.battle.hand
+        power = len(hand)*self.__power
+        for card in hand[:]:
+            hand.remove(card)
+        target.resource.disappear(power)
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
         return (
-            super(Delete, self).is_usable((params[0], params[1])) and
-            self._rank <= len(param.hand) and not param.jokers)
+            super(Delete, self).is_available(params) and
+            self._rank <= len(target.hand) and not target.jokers)
 
 
 # ---- Life ----
@@ -92,10 +91,11 @@ class Recovery(_sorcery.Sorcery):
         super(Recovery, self).__init__(string, cost, is_agrsv, catalyst)
         self.__rate = float(rate if rate < 1 else 1)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        group = systems[0].battle.group
+        target, _ = self._get_target(systems, is_reverse)
+        group = target.battle.group
         if group:
             if self.__is_all:
                 for unit in group:
@@ -105,16 +105,12 @@ class Recovery(_sorcery.Sorcery):
                 if unit:
                     unit.life_with_effect += int(unit.max_life*self.__rate)
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
         return (
-            super(Recovery, self).is_usable((params[0], params[1])) and
-            param.has_damaged)
+            super(Recovery, self).is_available(params) and target.has_damaged)
 
 
 class Critical(_sorcery.Sorcery):
@@ -134,38 +130,34 @@ class Critical(_sorcery.Sorcery):
         self.__hit_rate = float(hit_rate if hit_rate < 1 else 1)
         self.__is_force = bool(is_force)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        group = systems[0].battle.group
+        target, _ = self._get_target(systems, is_reverse)
+        group = target.battle.group
         if group:
             if self.__is_all:
                 for unit in group:
                     if (
                         self.__hit_rate <= _random.random() or
-                        not unit.death(self.__is_force)
+                        not unit.die(self.__is_force)
                     ):
                         unit.flash("damage")
             else:
                 unit = group.get_healthy(group.get_livings(group))
                 if unit and (
                     self.__hit_rate <= _random.random() or
-                    not unit.death(self.__is_force)
+                    not unit.die(self.__is_force)
                 ):
                     unit.flash("damage")
             group.destroy()
-            systems[0].battle.update()
+            target.update()
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
-        return (
-            super(Critical, self).is_usable((params[0], params[1])) and
-            param.has_normal)
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
+        return super(Critical, self).is_available(params) and target.has_normal
 
 
 # ---- Unit ----
@@ -174,19 +166,14 @@ class _Clone(_sorcery.Sorcery):
     """
     __slots__ = ()
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        def __is_fulfill(params):
-            u"""条件判定。
-            """
-            return params[1].is_group_exsit and not params[0].is_full_group
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
+        target, other = self._get_target(
+            params, params[0].has_reverse_sorcery)
         return (
-            super(_Clone, self).is_usable((params[0], params[1])) and
-            __is_fulfill(params if is_agrsv else params[::-1]))
+            super(_Clone, self).is_available(params) and
+            target.is_group_exsit and not other.is_full_group)
 
 
 class Double(_Clone):
@@ -201,15 +188,16 @@ class Double(_Clone):
         super(Double, self).__init__(
             type_+"###"+name+"###"+description, cost, is_agrsv, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        target = systems[0].battle.group
-        receive = systems[1].battle.group
-        if target:
-            unit = _random.choice(target)
-            if receive.summon(unit.data):
-                receive[-1].copy_parameter(unit)
+        target, other = self._get_target(systems, is_reverse)
+        target_group = target.battle.group
+        other_group = other.battle.group
+        if target_group and not other_group.is_full:
+            unit = _random.choice(target_group)
+            if other_group.summon(unit.data):
+                other_group[-1].copy_parameter(unit)
 
 
 class Attract(_Clone):
@@ -228,20 +216,22 @@ class Attract(_Clone):
             type_+"###"+name+"###"+description, cost, is_agrsv, catalyst)
         self.__hit_rate = float(hit_rate if hit_rate < 1 else 1)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        target = systems[0].battle.group
-        receive = systems[1].battle.group
-        if target:
-            unit = _random.choice(target)
+        target, other = self._get_target(systems, is_reverse)
+        target_group = target.battle.group
+        other_group = other.battle.group
+        if target_group and not other_group.is_full:
+            unit = _random.choice(target_group)
             if (
                 _random.random() < self.__hit_rate and
-                receive.summon(unit.data)
+                other_group.summon(unit.data)
             ):
-                receive[-1].copy_parameter(unit)
-                unit.death(True)
-                target.destroy()
+                other_group[-1].copy_parameter(unit)
+                unit.die(True)
+                target_group.destroy()
+                target.update()
             else:
                 unit.flash("damage")
 
@@ -249,66 +239,51 @@ class Attract(_Clone):
 class Spawn(_sorcery.Sorcery):
     u"""生成ソーサリー。
     """
-    __slots__ = "__name", "__is_all"
+    __slots__ = "__name", "__is_whole"
 
     def __init__(
         self, string, cost, is_agrsv,
-        is_all=False, catalyst=None
+        is_whole=False, catalyst=None
     ):
         u"""コンストラクタ。
         """
         type_, name, description, self.__name = string.split("###")
-        self.__is_all = bool(is_all)
+        self.__is_whole = bool(is_whole)
         super(Spawn, self).__init__(
             type_+"###"+name+"###"+description, cost, is_agrsv, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
         import armament.collectible as __collectible
         import armament.units.data as __data
         import utils.const as __const
+        import utils.general as __general
+        POWER = 300
+        target, other = self._get_target(systems, is_reverse)
+        group = target.battle.group
+        if not group.is_full:
+            if not self.__name:
+                total = other.resource.total
+                summon = __data.Summon(
+                    u"##dragon_11##"+__const.DRAGON_TRIBE +
+                    u"##ジョーカードラゴン##死神竜#"
+                    u"自身の合計スターによって強さが変化",
+                    (10+(total << 1), total), (4, -1), POWER+(total << 2),
+                    ability=__data.Ability(
+                        __const.ADDITION_ABILITY+"###" +
+                        __general.get_skill_names(
+                            __const.COMPLETE_ASSIST_SKILL)))
+                group.summon(summon)
+            else:
+                number, = __collectible.Collectible.get_by_name(self.__name)
+                for _ in range(group.empty if self.__is_whole else 1):
+                    group.summon(__collectible.get(number))
 
-        def __get_name(skill):
-            u"""スキル名取得。
-            """
-            name, _ = skill.split("#")
-            return name
-        name = _random.choice((
-            u"ジョーカードラゴン", u"ジョーカーフライ"
-        )) if not self.__name else self.__name
-        total = systems[1].resorce.total
-        if name == u"ジョーカードラゴン":
-            summon = __data.Summon(
-                u"##dragon_11##"+__const.DRAGON_TRIBE +
-                u"##ジョーカードラゴン##死神竜#"
-                u"相手の合計スターによって強さが変わる",
-                (10+(total >> 4), 10+(total >> 3)),
-                (1+(total >> 6), 5), 300+total, ability=__data.Ability(
-                    __const.ADDITION_ABILITY+"###" +
-                    __get_name(__const.COMPLETE_ASSIST_SKILL)))
-            systems[0].battle.group.summon(summon)
-        elif name == u"ジョーカーフライ":
-            summon = __data.Summon(
-                u"##fly_15##"+__const.SKY_TRIBE +
-                u"##ジョーカーフライ##死神バエ#"
-                u"相手の合計スターによって強さが変わる",
-                (10+(total >> 5), 10+(total >> 4)),
-                (1+(total >> 6), 5), 300+(total >> 1))
-            for _ in range(__const.FIELD_UNITS):
-                systems[0].battle.group.summon(summon)
-        else:
-            number, = __collectible.Collectible.get_by_name(self.__name)
-            for _ in range(__const.FIELD_UNITS if self.__is_all else 1):
-                systems[0].battle.group.summon(__collectible.get(number))
-
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
         return (
-            super(Spawn, self).is_usable((params[0], params[1])) and
-            not param.is_full_group)
+            super(Spawn, self).is_available(params) and
+            not target.is_full_group)

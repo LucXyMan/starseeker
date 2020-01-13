@@ -8,39 +8,38 @@ This software is released under BSD license.
 メニューモードモジュール。
 """
 import mode as __mode
-import ui.entries as _entries
-import ui.menu as _menu
+import uis.entries as _entries
+import uis.menu as _menu
 
 
 class _Menu(__mode.Mode):
     u"""メニューモード。
     """
-    __slots__ = "_controler", "_info", "_operate"
+    __slots__ = "_controler", "_notice", "_operation"
 
     def __init__(self):
         u"""コンストラクタ。
         """
         import input as __input
-        import ui.info as __info
+        import uis.notice as __notice
         super(_Menu, self).__init__()
         self._controler = __input.Menu(0)
-        self._info = __info.Info()
-        self._info.has_info = True
-
-    def __command_io(self):
-        u"""コマンド入出力。
-        """
-        if not self._fade.is_fading:
-            self._controler.input()
-            self._operate.command_input(self._controler.output())
-            self._switch(self._operate.command_run())
+        self._notice = __notice.Notice()
+        self._notice.has_notice = True
 
     def loop(self):
         u"""ループ処理。
         """
+        def __io_command():
+            u"""コマンド入出力。
+            """
+            if not self._fade.is_fading:
+                self._controler.input()
+                self._operation.input_command(self._controler.output())
+                self._switch(self._operation.run_command())
         while self._is_loopable:
             super(_Menu, self).loop()
-            self.__command_io()
+            __io_command()
             self._update()
         return self._result
 
@@ -54,12 +53,12 @@ class ModeSelect(_Menu):
     def __init__(self):
         u"""コンストラクタ。
         """
-        import ui as __ui
+        import uis as __uis
         super(ModeSelect, self).__init__()
-        self._info.has_time = True
-        self._info.has_sp = True
-        self._info.has_speed = True
-        self._operate = __ui.ModeSelect()
+        self._notice.has_time = True
+        self._notice.has_sp = True
+        self._notice.has_speed = True
+        self._operation = __uis.ModeSelect()
 
 
 class DuelEntry(_Menu):
@@ -71,10 +70,10 @@ class DuelEntry(_Menu):
         u"""コンストラクタ。
         """
         super(DuelEntry, self).__init__()
-        self._operate = _entries.Duel()
-        self._info.has_time = True
-        self._info.has_level = True
-        self._info.has_player = True
+        self._operation = _entries.Duel()
+        self._notice.has_time = True
+        self._notice.has_level = True
+        self._notice.has_player = True
 
 
 class VersusEntry(_Menu):
@@ -86,10 +85,10 @@ class VersusEntry(_Menu):
         u"""コンストラクタ。
         """
         super(VersusEntry, self).__init__()
-        self._operate = _entries.Versus()
-        self._info.has_time = True
-        self._info.has_size = True
-        self._info.has_player = True
+        self._operation = _entries.Versus()
+        self._notice.has_time = True
+        self._notice.has_size = True
+        self._notice.has_player = True
 
 
 class Customize(_Menu):
@@ -101,10 +100,10 @@ class Customize(_Menu):
         u"""コンストラクタ。
         """
         super(Customize, self).__init__()
-        self._operate = _menu.Customize()
-        self._info.has_time = True
-        self._info.has_sp = True
-        self._info.has_player = True
+        self._operation = _menu.Customize()
+        self._notice.has_time = True
+        self._notice.has_sp = True
+        self._notice.has_player = True
 
     def _switch(self, status):
         u"""モード切り替え。
@@ -123,7 +122,7 @@ class Result(_Menu):
         u"""コンストラクタ。
         """
         super(Result, self).__init__()
-        self._operate = _menu.Result()
-        self._info.has_time = True
-        self._info.has_sp = True
-        self._info.has_next_level = True
+        self._operation = _menu.Result()
+        self._notice.has_time = True
+        self._notice.has_sp = True
+        self._notice.has_next_level = True

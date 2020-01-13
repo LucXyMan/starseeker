@@ -8,7 +8,6 @@ This software is released under BSD license.
 ネクストピースモジュール。
 """
 import utils.const as _const
-import utils.layouter as _layouter
 import pieces as _pieces
 
 
@@ -25,6 +24,7 @@ class Next(object):
         self.__display: ネクストピースの表示。
         """
         import lottery as __lottery
+        import utils.layouter as __layouter
         import window as __window
         self.__id = id_
         length = 2
@@ -35,7 +35,7 @@ class Next(object):
         rect = 0, 0, w, h
         self.__card_lot = __lottery.Card(deck)
         self.__windows = __window.Next(rect), __window.Next(rect)
-        _layouter.Game.set_next(self.__windows, self.__id)
+        __layouter.Game.set_next(self.__windows, self.__id)
         self.__display()
 
     def __display(self):
@@ -43,14 +43,14 @@ class Next(object):
         """
         self.__pieces = []
         for i, window in enumerate(self.__windows):
-            piece = _pieces.Dropping(self.__array[i], (0, 0))
+            piece = _pieces.Falling(self.__array[i], (0, 0))
             window.piece = piece
             self.__pieces.append(piece)
 
     def forward(self, pattern):
         u"""ピース進行。
         """
-        def __feature():
+        def __form():
             u"""パターンの変更全般。
             """
             import armament.collectible as __collectible
@@ -66,7 +66,7 @@ class Next(object):
                     _const.BASIC_NAMES, ticket)
         for piece in self.__pieces:
             piece.clear()
-        __feature()
+        __form()
         result, = self.__array.append(pattern)
         self.__display()
         return result

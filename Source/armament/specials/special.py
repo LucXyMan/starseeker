@@ -36,7 +36,6 @@ class Special(__collectible.Collectible):
 
     def __init__(self, string, cost):
         u"""コンストラクタ。
-        catalyst: 変化後魔術#反応魔術。
         """
         self._type, self._name, self._description = string.split("##")
         self._rank, self._star = cost
@@ -46,21 +45,20 @@ class Special(__collectible.Collectible):
         """
         return unicode(u"<{name}: {type}, {elm}属性>".format(
             name=self._name, type=self._type,
-            elm=_const.STAR_TYPES[self._star]))
+            elm=_const.STAR_CHARS[self._star]))
 
     def adapt(self, target):
-        u"""パイル可能な場合にパイル後魔術を返す。
+        u"""魔法反応可能な場合に反応後ソーサリーを返す。
         そうでない場合Noneを返す。
         """
         return None
 
     @property
-    def info(self):
-        u"""情報の取得。
+    def notice(self):
+        u"""情報取得。
         """
         import inventories as __inventories
-        stars = [u"木", u"火", u"土", u"金", u"水", u"月", u"太陽"]
-        star = stars[self._star]
+        star = _const.STAR_CHARS[self._star]
         have_got = __inventories.Card.get(self.number)
         if self._type == _const.SUPPORT_ARCANUM:
             return u"{name}/{description}{subscript}".format(

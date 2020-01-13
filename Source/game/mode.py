@@ -20,8 +20,7 @@ def init():
     import sprites as __sprites
     import sprites.effects as __effects
     import sprites.huds as __huds
-    import systems.battle as __battle
-    global _card_group, _clock, _sprites, _group, _effect_group
+    global _clock, _sprites, _group, _effect_group
     _clock = _pygame.time.Clock()
     _sprites = (
         __sprites.Shadow,
@@ -29,7 +28,6 @@ def init():
         __sprites.Window,
         __sprites.Decorator,
         __huds.HUD,
-        __battle.Card,
         __sprites.String,
         __effects.Effect)
     _group = _pygame.sprite.Group()
@@ -38,8 +36,7 @@ def init():
         Sprite.draw_group = _pygame.sprite.RenderUpdates()
     __units.Unit.draw_group = __huds.Gauge.draw_group = (
         _pygame.sprite.LayeredUpdates())
-    _card_group = __battle.Card.group = _pygame.sprite.Group()
-    __battle.Card.draw_group = _pygame.sprite.LayeredUpdates()
+    __huds.HUD.draw_group = _pygame.sprite.LayeredUpdates()
     _effect_group = __effects.Effect.group = _pygame.sprite.Group()
 
 
@@ -104,7 +101,7 @@ class Mode(object):
         self._result = 0
         self._fade = __Fade()
 
-    def _expansion(self):
+    def _expand(self):
         u"""メインサーフェスにベースを拡大して描画。
         """
         main = _screen.Screen.get_main()
@@ -118,17 +115,15 @@ class Mode(object):
         import utils.image as __image
         __counter.forward()
         _group.update()
-        _card_group.update()
         _effect_group.update()
         __image.BackGround.update()
         __image.BackGround.transcribe(_screen.Screen.get_base())
         for Sprite in _sprites:
-            if hasattr(Sprite, "draw_group"):
-                Sprite.draw_group.draw(_screen.Screen.get_base())
+            Sprite.draw_group.draw(_screen.Screen.get_base())
         self._fade.update()
         _screen.Screen.get_base().blit(
             self._fade.image, self._fade.rect.topleft)
-        self._expansion()
+        self._expand()
         _pygame.display.flip()
 
     def _switch(self, status):
@@ -147,7 +142,7 @@ class Mode(object):
         _clock.tick(_const.FRAME_RATE)
         self.__frame = self.__frame+1 & 0b111111
         if self.__frame == 0:
-            __inventories.Time.forward()
+            __inventories.forward_time()
         events = _pygame.event.get()
         __sound.BGM.loop(events)
         return events
@@ -155,11 +150,9 @@ class Mode(object):
     def terminate(self):
         u"""終了処理。
         """
-        import utils.memoize as __memoize
         for Sprite in _sprites:
             for sprite in Sprite.group.sprites():
                 sprite.kill()
-        __memoize.clear()
 
     # ---- Property ----
     @property

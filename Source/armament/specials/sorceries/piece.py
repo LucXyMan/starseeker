@@ -29,42 +29,38 @@ class Forming(_sorcery.Sorcery):
         self.__power = power
         self.__is_strictly = bool(is_strictly)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
+        target, _ = self._get_target(systems, is_reverse)
         new, old = self.__target.split("##")
-        if systems[0].battle.player.armor.is_prevention(new):
-            _, _, armor_info, _ = systems[0].battle.equip
-            armor_info.flash()
+        if target.battle.player.armor.is_prevention(new):
+            _, _, armor, _ = target.battle.equip_huds
+            armor.flash()
         elif (
-            not systems[0].battle.group.is_prevention(new) and
-            systems[0].puzzle.field.replace(
+            not target.battle.group.is_prevention(new) and
+            target.puzzle.field.replace(
                 (1, 1) if self.__power == 0 else
                 (self.__power, self.__power+1),
                 (new, tuple(name for name in old.split("#"))))
         ):
-            systems[0].puzzle.skip()
+            target.puzzle.skip()
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
-        _, field = param.field
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
+        _, field = target.field
         _, old = self.__target.split("##")
         if self.__is_strictly:
             is_fulfill = any((block_name in (
                 name for name, _, _ in (block for _, block in field))) for
                 block_name in old.split("#"))
         else:
-            is_fulfill = param.field_one_eighth < sum((tuple(
+            is_fulfill = target.field_one_eighth < sum((tuple(
                 name for name, _, _ in (block for _, block in field)
             ).count(block_name)) for block_name in old.split("#"))
-        return (
-            super(Forming, self).is_usable((params[0], params[1])) and
-            is_fulfill)
+        return super(Forming, self).is_available(params) and is_fulfill
 
 
 class Hardening(_sorcery.Sorcery):
@@ -79,25 +75,23 @@ class Hardening(_sorcery.Sorcery):
         super(Hardening, self).__init__(
             type_+"###"+name+"###"+description, cost, is_agrsv, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        if systems[0].puzzle.field.hardening(0):
-            systems[0].puzzle.skip()
+        target, _ = self._get_target(systems, is_reverse)
+        if target.puzzle.field.harden():
+            target.puzzle.skip()
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
-        _, field = param.field
-        is_fulfill = param.field_one_eighth < sum((tuple(
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
+        _, field = target.field
+        is_fulfill = target.field_one_eighth < sum((tuple(
             name for name, _, _ in (block for _, block in field)
-        ).count(block_name)) for block_name in "Normal#Solid".split("#"))
+        ).count(block_name)) for block_name in ("Normal", "Solid"))
         return (
-            super(Hardening, self).is_usable((params[0], params[1])) and
+            super(Hardening, self).is_available((params[0], params[1])) and
             is_fulfill)
 
 
@@ -118,34 +112,33 @@ class Freeze(Forming):
         super(Freeze, self).__init__(
             string, cost, is_agrsv, power, is_strictly, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        if is_exist:
-            healths = systems[0].battle.group.healths
+        target, _ = self._get_target(systems, is_reverse)
+        if target.battle.group:
+            healths = target.battle.group.healths
             if healths:
                 if self.__is_all:
                     for unit in healths:
-                        unit.freezing()
+                        unit.freeze()
                         unit.flash("damage")
                 else:
                     unit = _random.choice(healths)
-                    unit.freezing()
+                    unit.freeze()
                     unit.flash("damage")
+                target.update()
         else:
-            super(Freeze, self).use(systems, is_exist)
+            super(Freeze, self).activate(systems, is_reverse)
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
         return (
-            _sorcery.Sorcery.is_usable(self, (params[0], params[1])) and
-            param.has_health if param.is_group_exsit else
-            super(Freeze, self).is_usable((params[0], params[1])))
+            _sorcery.Sorcery.is_available(self, params) and
+            target.has_health if target.is_group_exsit else
+            super(Freeze, self).is_available(params))
 
 
 class Poison(Forming):
@@ -164,38 +157,36 @@ class Poison(Forming):
         super(Poison, self).__init__(
             string, cost, is_agrsv, power, is_strictly, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        if is_exist:
-            healths = systems[0].battle.group.healths
+        target, _ = self._get_target(systems, is_reverse)
+        group = target.battle.group
+        if group:
+            healths = group.healths
             if healths:
                 if self.__is_all:
                     for unit in healths:
-                        unit.poisoning()
+                        unit.poison()
                         unit.flash("damage")
                 else:
                     unit = _random.choice(healths)
-                    unit.poisoning()
+                    unit.poison()
                     unit.flash("damage")
         else:
-            super(Poison, self).use(systems, is_exist)
+            super(Poison, self).activate(systems, is_reverse)
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         アンデッド以外の健康なクリーチャーが存在する場合使用する。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
-        is_fulfill = (
-            param.has_health if params[0].has_reverse_sorcery else
-            param.has_normal)
+        is_reverse = params[0].has_reverse_sorcery
+        target, _ = self._get_target(params, is_reverse)
+        is_fulfill = target.has_health if is_reverse else target.has_normal
         return (
-            _sorcery.Sorcery.is_usable(self, (params[0], params[1])) and
-            is_fulfill if param.is_group_exsit else
-            super(Poison, self).is_usable((params[0], params[1])))
+            _sorcery.Sorcery.is_available(self, params) and
+            is_fulfill if target.is_group_exsit else
+            super(Poison, self).is_available(params))
 
 
 # ---- Hold ----
@@ -213,10 +204,11 @@ class Hold(_sorcery.Sorcery):
         super(Hold, self).__init__(
             type_+"###"+name+"###"+description, cost, is_agrsv, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        systems[0].puzzle.hold.change(self.__is_single, self.__target)
+        target, _ = self._get_target(systems, is_reverse)
+        target.puzzle.hold.change(self.__is_single, self.__target)
 
 
 class Unlock(Hold):
@@ -225,20 +217,15 @@ class Unlock(Hold):
     """
     __slots__ = ()
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
-        is_agrsv = (
-            not self._is_agrsv if params[0].has_reverse_sorcery else
-            self._is_agrsv)
-        param = params[1] if is_agrsv else params[0]
+        target, _ = self._get_target(params, params[0].has_reverse_sorcery)
         is_fulfill = (
-            not param.has_phantom_thief and
-            param.hold_item_state & 0b0011 == 0b0011 and
-            param.has_alone_chest)
-        return (
-            super(Unlock, self).is_usable((params[0], params[1])) and
-            is_fulfill)
+            not target.has_phantom_thief and
+            target.hold_item_state & 0b0011 == 0b0011 and
+            target.has_alone_chest)
+        return super(Unlock, self).is_available(params) and is_fulfill
 
 
 class Exchange(_sorcery.Sorcery):
@@ -251,26 +238,27 @@ class Exchange(_sorcery.Sorcery):
         """
         super(Exchange, self).__init__(string, cost, True, catalyst)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        systems[0].puzzle.hold.exchange(systems[1].puzzle.hold)
+        myself, rival = systems
+        myself.puzzle.hold.exchange(rival.puzzle.hold)
 
-    def is_usable(self, params):
+    def is_available(self, params):
         u"""使用可能判定。
         """
+        myself, rival = params
         is_exist = (
-            params[0].hold_item_state & 0b0001 and
-            params[1].hold_item_state & 0b0001)
+            myself.hold_item_state & 0b0001 and
+            rival.hold_item_state & 0b0001)
         is_fulfill = 2 < (
-            (not bool(params[0].hold_item_state & 0b0100)) +
-            bool(params[0].hold_item_state & 0b1000) +
-            bool(params[1].hold_item_state & 0b0100) +
-            (not bool(params[1].hold_item_state & 0b1000))
+            (not bool(myself.hold_item_state & 0b0100)) +
+            bool(myself.hold_item_state & 0b1000) +
+            bool(rival.hold_item_state & 0b0100) +
+            (not bool(rival.hold_item_state & 0b1000))
         ) if is_exist else False
-        return (
-            super(Exchange, self).is_usable((params[0], params[1])) and
-            is_fulfill)
+        return super(Exchange, self).is_available(
+            (myself, rival)) and is_fulfill
 
 
 # ---- Joker ----
@@ -286,7 +274,8 @@ class KingDemon(_sorcery.Sorcery):
         super(KingDemon, self).__init__(
             type_+"###"+name+"###"+description, (1, -1), False)
 
-    def use(self, systems, is_exist):
+    def activate(self, systems, is_reverse):
         u"""効果発動。
         """
-        systems[0].puzzle.field.add_demon()
+        target, _ = self._get_target(systems, is_reverse)
+        target.puzzle.field.add_demon()

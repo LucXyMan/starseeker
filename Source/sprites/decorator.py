@@ -6,12 +6,11 @@ Copyright (c) 2019 Yukio Kuro
 This software is released under BSD license.
 
 デコレータモジュール。
-ウィンドウなどの枠を設定する。
 """
 import pygame as _pygame
 
 
-def set_decorator(caster, groups=None):
+def set_decorator(subject, groups=None):
     u"""デコレータ設定。
     """
     class __Top(Decorator):
@@ -26,13 +25,13 @@ def set_decorator(caster, groups=None):
             u"""画像更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                top, _, _, _ = self._caster.decorate
-                self.image.set_alpha(self._ALPHA if not top else None)
-                self.rect.midbottom = self._caster.rect.midtop
+                is_fulfill = self._subject.decoration & 0b0001
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.midbottom = self._subject.rect.midtop
             else:
                 self.kill()
 
@@ -48,13 +47,13 @@ def set_decorator(caster, groups=None):
             u"""画像更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                _, _, _, left = self._caster.decorate
-                self.image.set_alpha(self._ALPHA if not left else None)
-                self.rect.midright = self._caster.rect.midleft
+                is_fulfill = self._subject.decoration & 0b1000
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.midright = self._subject.rect.midleft
             else:
                 self.kill()
 
@@ -70,13 +69,13 @@ def set_decorator(caster, groups=None):
             u"""画像更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                _, right, _, _ = self._caster.decorate
-                self.image.set_alpha(self._ALPHA if not right else None)
-                self.rect.midleft = self._caster.rect.midright
+                is_fulfill = self._subject.decoration & 0b0010
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.midleft = self._subject.rect.midright
             else:
                 self.kill()
 
@@ -92,13 +91,13 @@ def set_decorator(caster, groups=None):
             u"""画像の更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                _, _, bottom, _ = self._caster.decorate
-                self.image.set_alpha(self._ALPHA if not bottom else None)
-                self.rect.midtop = self._caster.rect.midbottom
+                is_fulfill = self._subject.decoration & 0b0100
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.midtop = self._subject.rect.midbottom
             else:
                 self.kill()
 
@@ -128,14 +127,13 @@ def set_decorator(caster, groups=None):
             u"""画像の更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                top, _, _, left = self._caster.decorate
-                self.image.set_alpha(
-                    self._ALPHA if not top and not left else None)
-                self.rect.bottomright = self._caster.rect.topleft
+                is_fulfill = self._subject.decoration & 0b1001
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.bottomright = self._subject.rect.topleft
             else:
                 self.kill()
 
@@ -146,14 +144,13 @@ def set_decorator(caster, groups=None):
             u"""画像の更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                top, right, _, _ = self._caster.decorate
-                self.image.set_alpha(
-                    self._ALPHA if not top and not right else None)
-                self.rect.bottomleft = self._caster.rect.topright
+                is_fulfill = self._subject.decoration & 0b0011
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.bottomleft = self._subject.rect.topright
             else:
                 self.kill()
 
@@ -164,14 +161,13 @@ def set_decorator(caster, groups=None):
             u"""画像の更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                _, _, bottom, left = self._caster.decorate
-                self.image.set_alpha(
-                    self._ALPHA if not bottom and not left else None)
-                self.rect.topright = self._caster.rect.bottomleft
+                is_fulfill = self._subject.decoration & 0b1100
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.topright = self._subject.rect.bottomleft
             else:
                 self.kill()
 
@@ -182,21 +178,20 @@ def set_decorator(caster, groups=None):
             u"""画像の更新。
             通常画像と発光画像の切り替え。
             """
-            if self._caster.alive():
+            if self._subject.alive():
                 self.image = (
-                    self._light_image if self._caster.is_light else
+                    self._light_image if self._subject.is_light else
                     self._base_image)
-                _, right, bottom, _ = self._caster.decorate
-                self.image.set_alpha(
-                    self._ALPHA if not right and not bottom else None)
-                self.rect.topleft = self._caster.rect.bottomright
+                is_fulfill = self._subject.decoration & 0b0110
+                self.image.set_alpha(None if is_fulfill else self._ALPHA)
+                self.rect.topleft = self._subject.rect.bottomright
             else:
                 self.kill()
     for Decorator_ in (
         __Top, __TopRight, __Right, __BottomRight,
         __Bottom, __BottomLeft, __Left, __TopLeft
     ):
-        Decorator_(caster, groups)
+        Decorator_(subject, groups)
 
 
 class Decorator(_pygame.sprite.DirtySprite):
@@ -207,13 +202,13 @@ class Decorator(_pygame.sprite.DirtySprite):
     _BASE_COLORS = "0xD0D0D0", "0x606060", "0x202020"
     _LIGHT_COLORS = "0xD0F0D0", "0xB0D0B0", "0x406040"
 
-    def __init__(self, caster, groups=None):
+    def __init__(self, subject, groups=None):
         u"""コンストラクタ。
         """
         super(Decorator, self).__init__(
             (Decorator.group, Decorator.draw_group) if groups is None else
             tuple(groups))
-        self._caster = caster
+        self._subject = subject
         self._base_image = self._get_image(False)
         self._light_image = self._get_image(True)
         self.image = self._base_image
@@ -223,7 +218,7 @@ class Decorator(_pygame.sprite.DirtySprite):
     def _get_horizon(self, is_light):
         u"""水平ライン画像取得。
         """
-        width = self._caster.rect.width
+        width = self._subject.rect.width
         height = self._DECORATOR_LINE_SIZE
         line_width = height >> 1
         surf = _pygame.Surface((width, height))
@@ -241,7 +236,7 @@ class Decorator(_pygame.sprite.DirtySprite):
         u"""垂直ライン画像取得。
         """
         width = self._DECORATOR_LINE_SIZE
-        height = self._caster.rect.height
+        height = self._subject.rect.height
         line_width = width >> 1
         surf = _pygame.Surface((width, height))
         light, _, dark = (

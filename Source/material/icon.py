@@ -21,7 +21,7 @@ def init(container):
         basic = __image.load(container.get("items.png"))
         height = 6
         for surf in (__image.get_another_color(basic, i) for i in range(16)):
-            part = __image.segment(surf, (16, height))
+            part = __image.get_segment(surf, (16, height))
             __items.append([part[j*16:j*16+16] for j in range(height)])
     __items = []
     __icon_proc()

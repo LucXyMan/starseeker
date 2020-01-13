@@ -11,7 +11,7 @@ import config as __config
 import pattern as __pattern
 import piece as __piece
 import field as __field
-import operate as __operate
+import falling as __falling
 get_basics = __config.get_basics
 get_levels = __config.get_levels
 get_total = __config.get_total
@@ -20,7 +20,7 @@ Pattern = __pattern.Pattern
 Rotatable = __pattern.Rotatable
 State = __piece.State
 Field = __field.Field
-Dropping = __operate.Dropping
+Falling = __falling.Falling
 
 
 def init():

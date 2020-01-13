@@ -16,6 +16,7 @@ class Group(object):
     u"""クリーチャーグループ。
     """
     __slots__ = "__id", "__packet", "__player", "__units"
+    __CAPACITY = 3
 
     def __init__(self, core, player):
         u"""コンストラクタ。
@@ -93,11 +94,11 @@ class Group(object):
         return False
 
     # ---- Battle ----
-    def charge(self, onepiece):
+    def charge(self, one_pieces):
         u"""チャージ処理。
         """
-        for monster in self.__units:
-            monster.charge(onepiece)
+        for unit in self.__units:
+            unit.charge(one_pieces)
 
     def receive(self, stroke):
         u"""攻撃を受け取る。
@@ -116,37 +117,46 @@ class Group(object):
             unit.enhance(type_, plus)
 
     # ---- Turn ----
-    def turn(self, is_game_over=False):
+    def turn(self):
         u"""ターン毎の処理。
-        is_game_overの時は全滅。
         """
-        if not is_game_over:
-            for unit in self.__units:
-                unit.count_down()
-                if unit.is_poison:
-                    unit.poison_effect()
-                    unit.flash("poison")
-                if unit.is_regeneratable:
-                    unit.regenerate()
-        self.destroy(is_game_over)
+        for unit in self.__units:
+            unit.count_down()
+            if unit.is_poison:
+                unit.poison_effect()
+                unit.flash("poison")
+            if unit.is_regeneratable:
+                unit.regenerate()
 
-    def destroy(self, is_game_over=False):
+    def destroy(self, resource=None, detect=None, is_game_over=False):
         u"""ユニット破壊処理。
         """
         for unit in self.__units[:]:
             if unit.is_dead or is_game_over:
-                unit.destroy()
+                star, add = unit.destroy()
+                if resource:
+                    resource.increase(star, add, detect=detect)
                 self.__units.remove(unit)
         _layouter.Game.set_creature(self.__units, self.__player, self.__id)
 
-    # ---- Detect ----
+    # ---- Detection ----
     def is_prevention(self, new):
-        u"""状態変化を防止した場合に真。
-        真の場合にフラッシュする。
+        u"""変化防止判定。
         new: 変化後ブロック。
         """
         for unit in self.__units:
             if new in unit.prevents:
+                unit.flash("skill")
+                return True
+        return False
+
+    def flash(self, skill):
+        u"""スキル所持対象を光らせる。
+        """
+        import utils.general as __general
+        name = __general.get_skill_names(skill)
+        for unit in self.__units:
+            if name in unit.skills.split("#"):
                 unit.flash("skill")
                 return True
         return False
@@ -193,12 +203,12 @@ class Group(object):
         return self.get_damaged(self.__units)
 
     @property
-    def recepters(self):
+    def donors(self):
         u"""融合可能クリーチャー名取得。
         """
         if self.__units:
             return set(reduce(
-                lambda x, y: x+y, (unit.recepters for unit in self.__units)))
+                lambda x, y: x+y, (unit.donors for unit in self.__units)))
         return set()
 
     @property
@@ -208,10 +218,15 @@ class Group(object):
         skills = tuple(unit.skills for unit in self.__units if unit.skills)
         return reduce(lambda x, y: x+"#"+y, skills) if skills else ""
 
-    # ------ Detect ------
+    @property
+    def empty(self):
+        u"""グループの空きを取得。
+        """
+        return self.__CAPACITY-len(self.__units)
+
+    # ------ Detection ------
     @property
     def is_full(self):
         u"""ユニットが満員状態の時に真。
         """
-        import utils.const as __const
-        return __const.FIELD_UNITS <= len(self.__units)
+        return self.__CAPACITY <= len(self.__units)

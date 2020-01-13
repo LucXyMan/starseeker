@@ -16,6 +16,7 @@ class Ruined(__block.Block):
     """
     _EFFECT = "white_smoke"
     _IMAGES = "ruin"
+    _SCORE = _const.QUARTER_SCORE
 
     @property
     def is_fragile(self):
@@ -28,7 +29,7 @@ class Water(__block.Block):
     u"""ウォーターブロック。
     """
     _EFFECT = "blue_bubble"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _IMAGES = "water"
     _MALIGNANCY = 0
     _SCORE = _const.QUARTER_SCORE
@@ -52,7 +53,7 @@ class Poison(__block.Block):
     """
     __LIMIT = 4
     _EFFECT = "purple_bubble"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _IMAGES = "poison"
     _MALIGNANCY = _const.MID_MALIGNANCY
     _SCORE = _const.SINGLE_SCORE
@@ -72,7 +73,7 @@ class Poison(__block.Block):
     def star_type(self):
         u"""スター種類。
         """
-        return -1
+        return _const.NUMBER_OF_STAR
 
 
 # ---- Invincible ----
@@ -98,9 +99,10 @@ class Magma(Invincible):
     u"""マグマブロック。
     """
     _EFFECT = "red_fire"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _IMAGES = "magma"
     _MALIGNANCY = _const.MID_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
     def crack(self, flag=0):
         u"""クラック処理。
@@ -128,10 +130,11 @@ class Ice(Invincible):
     周囲のブロックを凍結する。
     """
     _EFFECT = "blue_light"
-    _FRAME_NUM = 16
-    __STOP_TIME = (_FRAME_NUM >> 1)+(_FRAME_NUM >> 2)
+    _FRAME = 16
+    __STOP_TIME = (_FRAME >> 1)+(_FRAME >> 2)
     _IMAGES = "ice"
     _MALIGNANCY = _const.MID_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
     # ---- Completion ----
     def crack(self, flag=0):
@@ -173,7 +176,7 @@ class Ice(Invincible):
         u"""現在画像取得。
         """
         import utils.counter as __counter
-        frame = __counter.get_frame(self._FRAME_NUM)
+        frame = __counter.get_frame(self._FRAME)
         return self._scaled_images[
             0 if frame <= self.__STOP_TIME else frame-self.__STOP_TIME]
 
@@ -183,9 +186,10 @@ class Acid(Invincible):
     下方向のブロックを溶かす。
     """
     _EFFECT = "yellow_bubble"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _IMAGES = "acid"
     _MALIGNANCY = _const.MID_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
     def crack(self, flag=0):
         u"""クラック処理。
@@ -197,9 +201,7 @@ class Acid(Invincible):
     def effect(self):
         u"""アイテムを浸食。
         """
-        old = (
-            "Normal#Solid#"+_const.STAR_NAMES+"#"+_const.SHARD_NAMES+"#" +
-            _const.KEY_NAMES+"#"+_const.CARD_NAMES)
+        old = "Normal#Solid#"+_const.ITEM_NAMES
         ruined = "Ruined"
         if self._piece.height <= self._point.bottom:
             self.change(ruined)
@@ -229,17 +231,17 @@ class _Link(__block.Block):
         self._link = link
 
     # ---- Completion ----
-    def move_calc(self, fall=-1):
+    def calculate(self, fall=-1):
         u"""ブロック落下計算。
         """
-        super(_Link, self).move_calc(fall)
+        super(_Link, self).calculate(fall)
         next_ = (
             self._fall+self._point.height if self._is_destroyed else
             self._fall)
         for block in self._linked:
             fall = block._fall
             if next_ < fall or fall == -1:
-                block.move_calc(next_)
+                block.calculate(next_)
 
     # ---- Property ----
     @property
@@ -313,6 +315,7 @@ class Stone(Invincible, _Link):
     __LIMIT = 32
     _IMAGES = "stone"
     _MALIGNANCY = _const.MID_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
     def crack(self, flag=0):
         u"""クラック処理。

@@ -12,8 +12,7 @@ import utils.const as _const
 
 
 class Cell(_pygame.sprite.Sprite):
-    u"""セル。
-    全てのブロック・空白の基本形。
+    u"""全てのブロック・空白の基本形。
     """
     _SCORE = 0
 
@@ -40,8 +39,8 @@ class Cell(_pygame.sprite.Sprite):
     def __repr__(self):
         u"""文字列表現取得。
         """
-        return u"<type: {name}, size: {point}, state: {state}>".format(
-            name=self.__class__.__name__, point=self._point.size,
+        return u"<type: {name}, size: {size}, state: {state}>".format(
+            name=self.__class__.__name__, size=self._point.size,
             state=self._state)
 
     def __lt__(self, other):
@@ -74,12 +73,7 @@ class Cell(_pygame.sprite.Sprite):
         """
         return self.__compare >= other.__compare
 
-    def _get(self, point):
-        u"""セルを取得。
-        """
-        return self._piece.table.get_cell(point)
-
-    # ---- Detect ----
+    # ---- Detection ----
     def _is_leftside(self):
         u"""自身が左側に存在するか判定。
         """
@@ -152,14 +146,14 @@ class Cell(_pygame.sprite.Sprite):
         """
         self._is_destroyed = True
 
-    def move_calc(self, fall=-1):
+    def calculate(self, fall=-1):
         u"""落下計算。
         """
         def __get_aboves():
-            u"""自身の上にあるセル取得。
+            u"""自身の上に存在するセルを取得。
             """
             def __get_above():
-                u"""(x, 自身のtop)から上のセル取得。
+                u"""自身の上に存在するセルを取得。
                 """
                 for y in range(self._point.top-1, -1, -1):
                     result = self._get((x, y))
@@ -178,7 +172,7 @@ class Cell(_pygame.sprite.Sprite):
             self._fall)
         for above in __get_aboves():
             if next_fall < above._fall or above._fall == -1:
-                above.move_calc(next_fall)
+                above.calculate(next_fall)
 
     def remove(self):
         u"""セル除去。
@@ -196,12 +190,12 @@ class Cell(_pygame.sprite.Sprite):
             table.write(self)
         self._fall = -1
 
-    def shift(self, vector):
+    def push_up(self):
         u"""セル押上。
         """
         table = self._piece.table
         table.erase(self)
-        self._point.move_ip(vector)
+        self._point.move_ip(_const.UP)
         if 0 <= self._point.top:
             table.write(self)
 
@@ -211,7 +205,6 @@ class Cell(_pygame.sprite.Sprite):
         """
     def change(self, name="", state=-1):
         u"""セル変更。
-        変化後セルを設定、基本ブロックの色付けを行う。
         """
         if self.is_changeable:
             self.__to_block = name
@@ -219,7 +212,7 @@ class Cell(_pygame.sprite.Sprite):
             return True
         return False
 
-    def generation(self, getter):
+    def turn(self, getter):
         u"""セル世代交代。
         セル変化、セル削除など。
         """
@@ -235,6 +228,12 @@ class Cell(_pygame.sprite.Sprite):
                 block.update()
                 self._piece.remove(self)
                 self._piece.add(block)
+
+    # ---- Getter ----
+    def _get(self, point):
+        u"""セル取得。
+        """
+        return self._piece.table.get_cell(point)
 
     # ---- Property ----
     @property
@@ -285,21 +284,21 @@ class Cell(_pygame.sprite.Sprite):
     def star_type(self):
         u"""スター種類取得。
         """
-        return 0
+        return -1
 
     @property
     def shard_type(self):
         u"""シャード種類取得。
         """
-        return 0
+        return -1
 
     @property
     def treasure_rank(self):
         u"""宝ランク取得。
         """
-        return 0
+        return -1
 
-    # ------ Detect ------
+    # ------ Detection ------
     @property
     def is_changeable(self):
         u"""自身の変更可能判定。
@@ -322,19 +321,19 @@ class Cell(_pygame.sprite.Sprite):
 
     @property
     def is_space(self):
-        u"""空白のスペース判定
+        u"""スペース判定
         """
         return self.is_blank and self._state == 1
 
     @property
     def is_hole(self):
-        u"""空白のホール判定。
+        u"""ホール判定。
         """
         return self.is_blank and self._state == 2
 
     @property
     def is_adjacent(self):
-        u"""空白の隣接スペース判定。
+        u"""隣接スペース判定。
         """
         return self.is_blank and self._state == 3
 

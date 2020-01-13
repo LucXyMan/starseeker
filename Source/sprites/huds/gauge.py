@@ -23,11 +23,11 @@ class Gauge(__hud.HUD):
     _BACK_COLORS = _const.GRAY, _const.BLACK
     _LAYER = 0
 
-    def __init__(self, caster, groups=None):
+    def __init__(self, unit, groups=None):
         u"""コンストラクタ。
         """
         super(Gauge, self).__init__(groups)
-        self._caster = caster
+        self._unit = unit
         self._layer = -1
         self._old = -1
         self._scale = self._dest = 0
@@ -36,6 +36,31 @@ class Gauge(__hud.HUD):
         self._images = self._get_images()
         self.update()
 
+    def _fluctuate(self):
+        u"""目盛り増減。
+        """
+        if self._scale < self._dest:
+            self._scale += 1
+        elif self._scale > self._dest:
+            self._scale -= 1
+
+    def update(self):
+        u"""スプライト更新。
+        _casterがキルされた場合に自身をキルする。
+        """
+        def __set_layer():
+            u"""レイヤー設定。
+            """
+            current_layer = self._unit.layer_of_sprite
+            if self._layer != current_layer:
+                self._layer = current_layer
+                self.draw_group.change_layer(self, self._layer+self._LAYER)
+        if self._unit.alive():
+            __set_layer()
+        else:
+            self.kill()
+
+    # ---- Getter ----
     def _get_gauge_images(self, front, back, scale):
         u"""ゲージ画像作成。
         """
@@ -72,14 +97,6 @@ class Gauge(__hud.HUD):
         return tuple(
             __get_gauge_image(x, front, back, scale) for x in range(0, w-1))
 
-    def _rise_and_fall(self):
-        u"""目盛り増減。
-        """
-        if self._scale < self._dest:
-            self._scale += 1
-        elif self._scale > self._dest:
-            self._scale -= 1
-
     def _get_images(self):
         u"""ゲージ画像取得。
         """
@@ -96,6 +113,7 @@ class Gauge(__hud.HUD):
                 front[(i << 1):(i << 1)+2], front[(i-1) << 1:i << 1]) for
                 i in range(1, 4)), self._SCALE)
 
+    # ---- Setter ----
     def _set_string(self):
         u"""文字列設定。
         """
@@ -113,22 +131,6 @@ class Gauge(__hud.HUD):
         surf.blit(char, ((sw-cw) >> 1, 0))
         surf.set_alpha(self.__ALPHA)
         self.image = surf
-
-    def update(self):
-        u"""スプライト更新。
-        _casterがキルされた場合に自身をキルする。
-        """
-        def __set_layer():
-            u"""レイヤー設定。
-            """
-            current_layer = self._caster.layer_of_sprite
-            if self._layer != current_layer:
-                self._layer = current_layer
-                self.draw_group.change_layer(self, self._layer+self._LAYER)
-        if self._caster.alive():
-            __set_layer()
-        else:
-            self.kill()
 
 
 class Life(Gauge):
@@ -148,10 +150,10 @@ class Life(Gauge):
         def __set_parameter():
             u"""目的の値を設定する。
             """
-            life = self._caster.life
+            life = self._unit.life
             if life != self._old:
                 scale = int(
-                    (self._caster.life/float(self.__FULL_GAUGE)) *
+                    (self._unit.life/float(self.__FULL_GAUGE)) *
                     (len(self._images)-1))
                 self._dest = (
                     scale if scale < len(self._images) else
@@ -161,21 +163,21 @@ class Life(Gauge):
                     self.__LIFE_DISPLAY_LIMIT)
                 self._color = (
                     _string.CharColor(_const.RED+"##") if
-                    self._caster.is_quarter else
+                    self._unit.is_quarter else
                     _string.CharColor(_const.YELLOW+"##") if
-                    self._caster.is_half else
+                    self._unit.is_half else
                     _string.CharColor())
-            self._old = self._caster.life
+            self._old = self._unit.life
         super(Life, self).update()
         __set_parameter()
-        self._rise_and_fall()
-        if self._caster.is_dead:
+        self._fluctuate()
+        if self._unit.is_dead:
             self.image = _image.get_clear(self.image)
         else:
             self.image = self._images[self._scale]
             self._set_string()
             self.rect = self.image.get_rect()
-            _layouter.Game.set_gauge(self, self._caster)
+            _layouter.Game.set_gauge(self, self._unit)
 
 
 class Charge(Gauge):
@@ -196,23 +198,23 @@ class Charge(Gauge):
         def __set_parameter():
             u"""目的の値を設定する。
             """
-            if self._caster.power != self._old:
+            if self._unit.power != self._old:
                 limit = len(self._images)-1
-                ratio = self._caster.power/float(self._caster.packet)
+                ratio = self._unit.power/float(self._unit.packet)
                 scale = int(ratio*limit)
                 self._dest = scale if scale < limit else limit
                 self._text = str(int(ratio*100))+"%"
-            self._old = self._caster.power
+            self._old = self._unit.power
         super(Charge, self).update()
         __set_parameter()
-        self._rise_and_fall()
-        if self._caster.is_dead or self._caster.is_frozen:
+        self._fluctuate()
+        if self._unit.is_dead or self._unit.is_frozen:
             self.image = _image.get_clear(self.image)
         else:
             self.image = self._images[self._scale]
             self._set_string()
             self.rect = self.image.get_rect()
-            _layouter.Game.set_charge_gauge(self, self._caster)
+            _layouter.Game.set_charge_gauge(self, self._unit)
 
 
 class Freeze(Gauge):
@@ -220,10 +222,10 @@ class Freeze(Gauge):
     """
     _LAYER = 2
 
-    def __init__(self, caster, groups=None):
+    def __init__(self, unit, groups=None):
         u"""コンストラクタ。
         """
-        super(Freeze, self).__init__(caster, groups)
+        super(Freeze, self).__init__(unit, groups)
         self._text = "Freeze"
 
     def _get_images(self):
@@ -239,23 +241,23 @@ class Freeze(Gauge):
         def __set_parameter():
             u"""目的の値を設定する。
             """
-            if self._caster.frozen_time != self._old:
+            if self._unit.frozen_time != self._old:
                 scale = (
-                    self._caster.frozen_time /
-                    float(self._caster.packet << 2)*(len(self._images)-1))
+                    self._unit.frozen_time /
+                    float(self._unit.packet << 2)*(len(self._images)-1))
                 self._dest = int(
                     scale if scale < len(self._images) else
                     len(self._images)-1)
-            self._old = self._caster.frozen_time
+            self._old = self._unit.frozen_time
         super(Freeze, self).update()
         __set_parameter()
-        self._rise_and_fall()
+        self._fluctuate()
         self.image = self._images[self._scale]
         self._set_string()
-        if self._caster.is_dead or not self._caster.is_frozen:
+        if self._unit.is_dead or not self._unit.is_frozen:
             self.image = _image.get_clear(self.image)
         self.rect = self.image.get_rect()
-        _layouter.Game.set_charge_gauge(self, self._caster)
+        _layouter.Game.set_charge_gauge(self, self._unit)
 
 
 class Pressure(Gauge):
@@ -266,11 +268,11 @@ class Pressure(Gauge):
         _const.CYAN, _const.BLUE, _const.YELLOW, _const.MAGENTA)
     _SCALE = 4
 
-    def __init__(self, caster, system, groups=None):
+    def __init__(self, unit, system, groups=None):
         u"""コンストラクタ。
         """
         self.__accumulate = system.accumulate
-        super(Pressure, self).__init__(caster, groups)
+        super(Pressure, self).__init__(unit, groups)
 
     def update(self):
         u"""ゲージ更新。
@@ -301,8 +303,8 @@ class Pressure(Gauge):
             self._old = self.__accumulate.pressure
         super(Pressure, self).update()
         __set_parameter()
-        self._rise_and_fall()
+        self._fluctuate()
         self.image = self._images[self._scale]
         self._set_string()
         self.rect = self.image.get_rect()
-        _layouter.Game.set_gauge(self, self._caster)
+        _layouter.Game.set_gauge(self, self._unit)

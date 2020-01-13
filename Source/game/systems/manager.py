@@ -53,7 +53,7 @@ class _Drive(__Phase):
         self._manager.release()
         self._manager.throw()
         self._manager.command_io()
-        self._manager.completion()
+        self._manager.complete()
         self._manager.terminate()
 
 
@@ -63,7 +63,7 @@ class _Disappear(__Phase):
     def run(self):
         u"""実行。
         """
-        self._manager.completion()
+        self._manager.complete()
         self._manager.disappear()
 
 
@@ -73,7 +73,7 @@ class _Crushing(__Phase):
     def run(self):
         u"""実行。
         """
-        self._manager.completion()
+        self._manager.complete()
         self._manager.crushing()
 
 
@@ -83,7 +83,7 @@ class _Winning(__Phase):
     def run(self):
         u"""実行。
         """
-        self._manager.completion()
+        self._manager.complete()
         self._manager.winning()
 
 
@@ -93,8 +93,9 @@ class _Result(__Phase):
     def run(self):
         u"""実行。
         """
-        self._manager.completion()
-        self._manager.result()
+        self._manager.complete()
+        if not _effects.Effect.is_active():
+            self._manager.result()
 
 
 class _Finish(__Phase):
@@ -103,7 +104,7 @@ class _Finish(__Phase):
     def run(self):
         u"""実行。
         """
-        self._manager.completion()
+        self._manager.complete()
         self._manager.finish()
 
 
@@ -130,9 +131,6 @@ class __Manager(object):
         self._controler_1p = _input.Main(0)
         self._is_error = False
 
-    def _lose(self):
-        u"""敗北時処理。
-        """
     # ---- Normal ----
     def boot(self):
         u"""ゲーム開始時処理。
@@ -143,7 +141,7 @@ class __Manager(object):
             self._phase = _Drive(self)
 
     def release(self):
-        u"""魔術開放処理。
+        u"""アルカナ開放処理。
         """
         self._1p.release(self._2p)
         self._2p.release(self._1p)
@@ -158,21 +156,21 @@ class __Manager(object):
         u"""コマンド入出力。
         """
         self._controler_1p.input()
-        self._1p.command_input(self._controler_1p.output())
-        self._1p.command_run(self._2p)
+        self._1p.input_command(self._controler_1p.output())
+        self._1p.run_command(self._2p)
         self._1p.fall()
         self._2p.thinker.start()
-        self._2p.command_input(self._2p.thinker.output())
-        self._2p.command_run(self._1p)
+        self._2p.input_command(self._2p.thinker.output())
+        self._2p.run_command(self._1p)
         self._2p.fall()
 
-    def completion(self):
+    def complete(self):
         u"""フィールド補完処理。
         """
         if not self._1p.is_lose:
-            self._1p.completion(self._2p)
+            self._1p.complete(self._2p)
         if not self._2p.is_lose:
-            self._2p.completion(self._1p)
+            self._2p.complete(self._1p)
 
     # ---- Terminate ----
     def terminate(self):
@@ -199,10 +197,15 @@ class __Manager(object):
             self._1p.puzzle.field.is_active or
             self._2p.puzzle.field.is_active
         ):
+            # TODO: 直す。
             if self._1p.is_lose:
-                self._1p.battle.turn(True)
+                self._1p.battle.group.destroy(
+                    resource=self._2p.resource, detect=self._1p.flash,
+                    is_game_over=True)
             if self._2p.is_lose:
-                self._2p.battle.turn(True)
+                self._2p.battle.group.destroy(
+                    resource=self._1p.resource, detect=self._2p.flash,
+                    is_game_over=True)
             self._phase = _Winning(self)
 
     def winning(self):
@@ -224,25 +227,30 @@ class __Manager(object):
         u"""追加するSPを取得
         """
         return (
-            total << 3 if self._rank == 3 else
-            total << 2 if self._rank == 2 else
-            total << 1 if self._rank == 1 else
-            total)
+            total*4 if self._rank == 3 else total*3 if self._rank == 2 else
+            total*2 if self._rank == 1 else total)
 
+    def _win(self):
+        u"""勝利時のリザルト処理。
+        """
+        _sound.SE.play("bonus")
+        added = self._get_sp(self._1p.resource.total)
+        _inventories.add_sp(added)
+        self._1p.battle.player.add_effect(_effects.Bonus(
+            _screen.Screen.get_base().get_rect().center, added))
+        self._1p.resource.vanish()
+
+    def _lose(self):
+        u"""敗北時処理。
+        """
     def result(self):
         u"""リザルト処理。
         """
-        if not _effects.Effect.is_active():
-            if self._1p.is_win:
-                _sound.SE.play("bonus")
-                added = self._get_sp(self._1p.resorce.total)
-                _inventories.SP.add(added)
-                self._1p.battle.player.add_effect(_effects.Bonus(
-                    _screen.Screen.get_base().get_rect().center, added))
-                self._1p.resorce.vanishing()
-            if self._1p.is_lose:
-                self._lose()
-            self._phase = _Finish(self)
+        if self._1p.is_win:
+            self._win()
+        if self._1p.is_lose:
+            self._lose()
+        self._phase = _Finish(self)
 
     # ---- Finish ----
     def finish(self):
@@ -335,7 +343,7 @@ class Endless(__Manager):
         u"""コンストラクタ。
         level: 2P側のレベル。
         """
-        _effects.Progress(_inventories.Utils.get_endless()+1)
+        _effects.Progress(_inventories.General.get_endless()+1)
         super(Endless, self).__init__()
         level = _levels.get_endless()
         number, self._rank = level.player
@@ -346,11 +354,18 @@ class Endless(__Manager):
         self._2p = _system.System(level, self._parent, id_=1)
         self._2p.set_thinker(self._1p)
 
+    def _win(self):
+        u"""勝利時処理。
+        """
+        super(Endless, self)._win()
+        progress = _inventories.General.get_endless()
+        _inventories.General.set_reached_endless(progress)
+
     def _lose(self):
         u"""敗北時処理。
         """
-        _inventories.Utils.set_endless(
-            _inventories.Utils.get_endless()-(_const.ENDLESS_INTRVAL+1))
+        _inventories.General.set_endless(
+            _inventories.General.get_endless()-(_const.ENDLESS_INTRVAL+1))
 
     def _reset(self):
         u"""リセット時処理。
@@ -376,37 +391,36 @@ class Versus(__Manager):
         self.__controler_2p = _input.Main(1)
         self._is_error = self.__controler_2p.is_init_error
         if not self._is_error:
-            self._controler_1p.is_keyboard_useable = False
-            self.__controler_2p.is_keyboard_useable = False
+            self._controler_1p.is_keyboard_available = False
+            self.__controler_2p.is_keyboard_available = False
             _image.BackGround.set_image(_misc.get(_const.BG_DICT[number]))
             self._1p = _system.System(
                 _levels.get_1p(self._rank), self._parent, id_=0)
             self._2p = _system.System(level, self._parent, id_=1)
-            self._1p.is_pauseable = False
-            self._2p.is_pauseable = False
+            self._1p.is_pause_available = False
+            self._2p.is_pause_available = False
 
     def command_io(self):
         u"""コマンド入出力。
         """
         self._controler_1p.input()
-        self._1p.command_input(self._controler_1p.output())
-        self._1p.command_run(self._2p)
+        self._1p.input_command(self._controler_1p.output())
+        self._1p.run_command(self._2p)
         self._1p.fall()
         self.__controler_2p.input()
-        self._2p.command_input(self.__controler_2p.output())
-        self._2p.command_run(self._1p)
+        self._2p.input_command(self.__controler_2p.output())
+        self._2p.run_command(self._1p)
         self._2p.fall()
 
     def result(self):
         u"""リザルト処理。
         """
-        if not _effects.Effect.is_active():
-            added = self._get_sp(
-                self._1p.resorce.total+self._2p.resorce.total >> 1)
-            _inventories.SP.add(added)
-            _sound.SE.play("bonus")
-            self._1p.battle.player.add_effect(_effects.Bonus(
-                _screen.Screen.get_base().get_rect().center, added))
-            self._1p.resorce.vanishing()
-            self._2p.resorce.vanishing()
-            self._phase = _Finish(self)
+        added = self._get_sp(
+            self._1p.resource.total+self._2p.resource.total >> 1)
+        _inventories.add_sp(added)
+        _sound.SE.play("bonus")
+        self._1p.battle.player.add_effect(_effects.Bonus(
+            _screen.Screen.get_base().get_rect().center, added))
+        self._1p.resource.vanish()
+        self._2p.resource.vanish()
+        self._phase = _Finish(self)

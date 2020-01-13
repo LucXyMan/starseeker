@@ -16,17 +16,15 @@ import utils.const as _const
 class __Unit(__collectible.Collectible):
     u"""ユニットデータ。
     """
-    __slots__ = "_images", "__str", "_tribe", "__vit"
-    __VIT_LIMIT = 100
+    __slots__ = "_images", "_image_name", "__str", "_tribe", "__vit"
 
     def __init__(self, string, parametar):
         u"""コンストラクタ。
-        string: 画像##種類##種族##名前##概要。
+        string: 種類##種族##名前##概要。
         """
-        self._type, self._tribe, self._name, self._description = \
-            string.split("##")
-        self.__str, vit = parametar
-        self.__vit = self.__VIT_LIMIT if self.__VIT_LIMIT < vit else vit
+        self._type, self._tribe, self._name, self._description = (
+            string.split("##"))
+        self.__str, self.__vit = parametar
 
     @property
     def tribe(self):
@@ -81,8 +79,8 @@ class Player(__Unit):
         u"""コンストラクタ。
         """
         import armament.skill as __skill
-        image, tribe, name, description = string.split("##")
-        basic, another = _unit.get(image)
+        self._image_name, tribe, name, description = string.split("##")
+        basic, another = _unit.get(self._image_name)
         super(Player, self).__init__(
             u"プレイヤー##"+tribe+u"##"+name+u"##"+description, parametar)
         self._images = (
@@ -101,8 +99,15 @@ class Player(__Unit):
         """
         return self._images[is_right+(is_another << 1)]
 
+    # ---- Property ----
     @property
-    def info(self):
+    def image_type(self):
+        u"""画像種類取得。
+        """
+        return self._image_name
+
+    @property
+    def notice(self):
         u"""情報取得。
         """
         return self.name+u"/"+self._description
@@ -121,25 +126,25 @@ class Player(__Unit):
         if tribe == _const.WARRIOR_ROLE:
             return (
                 _const.SWORD_CATEGORY, _const.HEAVY_CATEGORY,
-                _const.HELMET_CATEGORY,
+                _const.HELMET_CATEGORY, _const.CROWN_CATEGORY,
                 _const.CLOTHES_CATEGORY, _const.ARMOR_CATEGORY,
                 _const.RING_CATEGORY)
         elif tribe == _const.WIZARD_ROLE:
             return (
                 _const.WAND_CATEGORY, _const.HEAVY_CATEGORY,
-                _const.HAT_CATEGORY,
+                _const.HAT_CATEGORY, _const.CROWN_CATEGORY,
                 _const.CLOTHES_CATEGORY, _const.ROBE_CATEGORY,
                 _const.RING_CATEGORY)
         elif tribe == _const.SEEKER_ROLE:
             return (
                 _const.SWORD_CATEGORY, _const.MISSILE_CATEGORY,
-                _const.HAT_CATEGORY,
+                _const.HAT_CATEGORY, _const.CROWN_CATEGORY,
                 _const.CLOTHES_CATEGORY, _const.ROBE_CATEGORY,
                 _const.RING_CATEGORY)
         elif tribe == _const.ROYAL_ROLE:
             return (
                 _const.SWORD_CATEGORY, _const.WAND_CATEGORY,
-                _const.HAT_CATEGORY,
+                _const.HAT_CATEGORY, _const.CROWN_CATEGORY,
                 _const.CLOTHES_CATEGORY, _const.ROBE_CATEGORY,
                 _const.RING_CATEGORY)
         elif tribe == _const.MONSTER_ROLE:
@@ -147,8 +152,10 @@ class Player(__Unit):
                 _const.SWORD_CATEGORY, _const.WAND_CATEGORY,
                 _const.HEAVY_CATEGORY, _const.MISSILE_CATEGORY,
                 _const.HAT_CATEGORY, _const.HELMET_CATEGORY,
+                _const.CROWN_CATEGORY,
                 _const.CLOTHES_CATEGORY, _const.ROBE_CATEGORY,
-                _const.ARMOR_CATEGORY, _const.RING_CATEGORY)
+                _const.ARMOR_CATEGORY,
+                _const.RING_CATEGORY)
         else:
             raise ValueError("No Role.")
 
@@ -156,7 +163,7 @@ class Player(__Unit):
 class Summon(__Unit):
     u"""召喚データ。
     """
-    __slots__ = "__ability", "__fusions", "__life", "__rank"
+    __slots__ = "__ability", "__image", "__life", "__rank", "__receptors"
     __STR_COST = 10
     __VIT_COST = 5
 
@@ -180,7 +187,7 @@ class Summon(__Unit):
 
     def __init__(
         self, string, parametar, cost, power,
-        ability=None, fusions=()
+        ability=None, receptors=()
     ):
         u"""コンストラクタ。
         """
@@ -197,8 +204,8 @@ class Summon(__Unit):
             return reduce(
                 lambda x, y: x+y, (i*cost for i in range(1, div+1))
             )+(div+1)*mod if 0 < div else mod
-        type_, image, tribe, name, description = string.split("##")
-        left = _unit.get(image)
+        type_, self._image_name, tribe, name, description = string.split("##")
+        left = _unit.get(self._image_name)
         self._images = left, _transform.flip(left, True, False)
         super(Summon, self).__init__(
             (type_ if type_ else _const.SUMMON_ARCANUM) +
@@ -210,50 +217,55 @@ class Summon(__Unit):
         if self.__life <= 0:
             raise ValueError(u"{creature} Is LIFE:0.".format(creature=self))
         self.__ability = ability
-        self.__fusions = tuple((fusion.recepter,  self.__class__(
-            fusion.get_string(self._tribe), fusion.parameter,
-            (self._rank+1, self._star), fusion.power, fusion.ability,
-            fusion.fusions)) for fusion in fusions)
+        self.__receptors = receptors
 
     def __repr__(self):
         u"""文字列表現取得。
         """
         return unicode(u"<{name}: {type}, {tribe}族, {elm}属性>".format(
             name=self._name, type=self._type, tribe=self._tribe,
-            elm=_const.STAR_TYPES[self._star]))
+            elm=_const.STAR_CHARS[self._star]))
 
     def get_image(self, is_right):
         u"""画像取得。
         """
         return self._images[is_right]
 
-    def is_usable(self, params, skills=()):
+    def is_available(self, params, skills=()):
         u"""使用できるかどうか判定する。
         """
-        return (super(Summon, self).is_usable((params[0], params[1])) and (
-            not params[0].is_full_group or self._name in params[0].recepters))
+        return (super(Summon, self).is_available((params[0], params[1])) and (
+            not params[0].is_full_group or self._name in params[0].donors))
+
+    # ---- Property ----
+    @property
+    def image_type(self):
+        u"""画像種類取得。
+        """
+        type_, _ = self._image_name.split("_")
+        return type_
 
     @property
-    def info(self):
+    def notice(self):
         u"""情報取得。
         サモンカードを取得している場合に、情報文字列を返す。
         """
         import inventories as __inventories
         param_text = u"#"+u"ライフ:{life}/攻撃:{str}/防御:{vit}".format(
-                life=self.__life, str=self.str, vit=self.vit)
-        fusion = tuple(recepter for recepter, _ in self.__fusions)
+            life=self.__life, str=self.str, vit=self.vit)
+        donor = tuple(receptors.donor for receptors in self.__receptors)
         fusion_text = u"#" + reduce(
-            lambda x, y: x+u"・"+y, fusion)+u"と融合" if any(fusion) else u""
+            lambda x, y: x+u"・"+y, donor)+u"と融合" if donor else u""
         desc, sub_desc = self._description.split("#")
         sub_desc = sub_desc if sub_desc else u"特殊能力無し"
-        info_text = (
+        notice = (
             u"{name}/ランク{rank}/{elm}属性/{tribe}{param}#{desc}/{sub_desc}"
             u"{fusion}".format(
                 name=self._name, rank=self._rank,
-                elm=(u"木", u"火", u"土", u"金", u"水", u"月", u"太陽")[self._star],
+                elm=_const.STAR_CHARS[self._star],
                 tribe=self._tribe, param=param_text, fusion=fusion_text,
                 desc=desc, sub_desc=sub_desc))
-        return info_text if __inventories.Card.get(self.number) else u""
+        return notice if __inventories.Card.get(self.number) else u""
 
     @property
     def rank(self):
@@ -274,19 +286,18 @@ class Summon(__Unit):
         return self.__life
 
     @property
-    def recepters(self):
+    def donors(self):
         u"""受容可能クリーチャー名取得。
         """
-        return tuple(recepter for recepter, _ in self.__fusions)
+        return tuple(recepter.donor for recepter in self.__receptors)
 
     def adapt(self, target):
         u"""融合可能な場合に融合後クリーチャーを返す。
         そうでない場合Noneを返す。
         """
-        for fusion in self.__fusions:
-            recepter, creature = fusion
-            if recepter == target.name:
-                return creature
+        for receptor in self.__receptors:
+            if receptor.donor == target.name:
+                return receptor.get_summon(self)
         return None
 
     @property
@@ -308,6 +319,7 @@ class Ability(object):
         self.__interval = int(interval)
         self.__is_single = bool(is_single)
 
+    # ---- Property ----
     @property
     def type(self):
         u"""アビリティ種類取得。
@@ -340,15 +352,15 @@ class Ability(object):
     def persistence(self):
         u"""持続効果取得。
         """
-        return self.__target if self.__type == \
-            _const.PERSISTENCE_ABILITY else ""
+        return (
+            self.__target if self.__type == _const.PERSISTENCE_ABILITY else "")
 
     @property
     def prevention(self):
         u"""防止効果取得。
         """
-        return self.__target if self.__type == \
-            _const.PREVENTION_ABILITY else ""
+        return (
+            self.__target if self.__type == _const.PREVENTION_ABILITY else "")
 
     @property
     def skills(self):
@@ -359,16 +371,15 @@ class Ability(object):
         ) if self.__type == _const.ADDITION_ABILITY else ""
 
 
-class Fusion(object):
+class Receptor(object):
     u"""融合データ。
     """
     __slots__ = (
-        "__fusions", "__image", "__parameter", "__power", "__recepter",
-        "__ability", "__string")
+        "__ability", "__parameter", "__power", "__receptors", "__string")
 
     def __init__(
         self, string, parametar, power,
-        ability=None, fusions=()
+        ability=None, receptors=()
     ):
         u"""コンストラクタ。
         """
@@ -376,43 +387,26 @@ class Fusion(object):
         self.__parameter = parametar
         self.__power = power
         self.__ability = ability
-        self.__fusions = fusions
+        self.__receptors = receptors
 
-    def get_string(self, tribe):
-        u"""文字列取得。
+    def get_summon(self, summon):
+        u"""召喚データ取得。
         """
-        _, image, name, description = self.__string.split("##")
-        return (
-            _const.FUSIONED_ARCANUM+"##"+image+"##" +
-            tribe+"##"+name+"##"+description)
-
-    @property
-    def recepter(self):
-        u"""融合対象名取得。
-        """
-        recepter, _, _, _ = self.__string.split("##")
-        return recepter
-
-    @property
-    def fusions(self):
-        u"""融合データ取得。
-        """
-        return self.__fusions
+        def __get_string(tribe):
+            u"""文字列取得。
+            """
+            _, image, name, description = self.__string.split("##")
+            return (
+                _const.FUSIONED_ARCANUM+"##" +
+                image+"##"+tribe+"##"+name+"##"+description)
+        level = summon.rank+1, summon.star
+        return Summon(
+            __get_string(summon.tribe), self.__parameter, level,
+            self.__power, self.__ability, self.__receptors)
 
     @property
-    def ability(self):
-        u"""アビリティデータ取得。
+    def donor(self):
+        u"""取り込むクリーチャー名取得。
         """
-        return self.__ability
-
-    @property
-    def parameter(self):
-        u"""パラメータ取得。
-        """
-        return self.__parameter
-
-    @property
-    def power(self):
-        u"""パワー取得。
-        """
-        return self.__power
+        donor, _, _, _ = self.__string.split("##")
+        return donor

@@ -7,132 +7,68 @@ This software is released under BSD license.
 
 フラッシュ画像生成モジュール。
 """
-import utils.const as _const
-import utils.image as _image
-import utils.memoize as _memoize
-__FLASH_TIME = _const.FRAME_DELAY << 2
-
-
-def __get_key(*args):
-    u"""フラッシュ画像キャッシュキー取得。
-    """
-    func, unit = args
-    return u"{method}##{name}##{is_right}##{state}".format(
-        method=u"{module}.{name}".format(
-            module=func.__module__, name=func.__name__
-        ), name=unit.data.name, is_right=unit.is_right, state=unit.state)
-
-
-def __create_effect(unit, name):
-    u"""エフェクト生成。
-    """
-    import random as __random
-    import sprites.effects as __effects
-    w = unit.rect.width >> 2
-    h = unit.rect.height >> 2
-    __effects.Image((
-        unit.rect.centerx+__random.randint(-w, w),
-        unit.rect.centery+__random.randint(-h, h)), name, vector=(0, -1))
-
-
-def normal_generator(unit):
-    u"""通常フラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __normal_generator(unit):
-        u"""通常フラッシュに使用する画像を取得。
-        """
-        image = unit.current_image
-        flash = _image.get_colored_sub(image, _const.WHITE)
-        return tuple(
-            flash if i & 0b11 == 0 else image for i in range(__FLASH_TIME))
-    for image in __normal_generator(unit):
-        yield image
-
-
-def damage_generator(unit):
-    u"""ダメージフラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __damage_generator(unit):
-        u"""ダメージフラッシュに使用する画像を取得。
-        """
-        image = unit.current_image
-        flash = _image.get_colored_add(image, _const.DARK_RED)
-        return tuple(
-            flash if i & 0b11 == 0 else image for i in range(__FLASH_TIME))
-    for image in __damage_generator(unit):
-        yield image
-
-
-def recovery_generator(unit):
-    u"""回復フラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __recovery_generator(unit):
-        u"""回復フラッシュに使用する画像を取得。
-        """
-        image = unit.current_image
-        flash = _image.get_colored_add(image, _const.DARK_BLUE)
-        return tuple(
-            flash if i & 0b11 == 0 else image for i in range(__FLASH_TIME))
-    for image in __recovery_generator(unit):
-        __create_effect(unit, "blue_light")
-        yield image
-
-
-def poison_generator(unit):
-    u"""毒フラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __poison_generator(unit):
-        u"""毒フラッシュに使用する画像を取得。
-        """
-        image = unit.current_image
-        flash = _image.get_colored_add(image, _const.DARK_GREEN)
-        return tuple(
-            flash if i & 0b11 == 0 else image for i in range(__FLASH_TIME))
-    for image in __poison_generator(unit):
-            __create_effect(unit, "purple_bubble")
-            yield image
-
-
-def summon_generator(unit):
-    u"""召喚フラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __summon_generator(unit):
-        u"""召喚フラッシュに使用する画像を取得。
-        """
-        return tuple((_image.get_colored_add(
-            unit.current_image, _const.RAINBOW[i & 0b111])
-        ) for i in range(__FLASH_TIME))
-    for image in __summon_generator(unit):
-            yield image
-
-
-def skill_generator(unit):
-    u"""スキルフラッシュジェネレータ。
-    """
-    @_memoize.memoize(get_key=__get_key)
-    def __skill_generator(unit):
-        u"""アビリティフラッシュに使用する画像を取得。
-        """
-        return tuple((_image.get_colored_add(
-            unit.current_image, _const.BURNING[i & 0b111])
-        ) for i in range(__FLASH_TIME))
-    for image in __skill_generator(unit):
-        __create_effect(unit, "red_light")
-        yield image
 
 
 def get(unit, type_):
     u"""フラッシュジェネレータ取得。
     """
+    import utils.const as _const
+    import utils.image as _image
+    __FLASH_TIME = _const.FRAME_DELAY << 2
+
+    def __create_effect(unit, name):
+        u"""エフェクト生成。
+        """
+        import random as __random
+        import sprites.effects as __effects
+        w = unit.rect.width >> 2
+        h = unit.rect.height >> 2
+        if name:
+            __effects.Image((
+                unit.rect.centerx+__random.randint(-w, w),
+                unit.rect.centery+__random.randint(-h, h)),
+                name, vector=(0, -1))
+
+    def __generator(color="", effect=""):
+        u"""フラッシュジェネレータ。
+        """
+        image = unit.current_image
+        flash = _image.get_colored_add(image, color)
+        for i in range(__FLASH_TIME):
+            __create_effect(unit, effect)
+            yield flash if i & 0b11 == 0 else image
+
+    def __normal_generator():
+        u"""基本フラッシュジェネレータ。
+        """
+        image = unit.current_image
+        flash = _image.get_colored_sub(image, _const.WHITE)
+        for i in range(__FLASH_TIME):
+            yield flash if i & 0b11 == 0 else image
+
+    def __summon_generator():
+        u"""召喚フラッシュジェネレータ。
+        """
+        for image in ((_image.get_colored_add(
+            unit.current_image, _const.RAINBOW[i & 0b111])
+        ) for i in range(__FLASH_TIME)):
+            yield image
+
+    def __skill_generator():
+        u"""スキルフラッシュジェネレータ。
+        """
+        for image in ((_image.get_colored_add(
+            unit.current_image, _const.BURNING[i & 0b111])
+        ) for i in range(__FLASH_TIME)):
+            __create_effect(unit, "red_light")
+            yield image
     return (
-        damage_generator(unit) if type_ == "damage" else
-        recovery_generator(unit) if type_ == "recovery" else
-        summon_generator(unit) if type_ == "summon" else
-        poison_generator(unit) if type_ == "poison" else
-        skill_generator(unit) if type_ == "skill" else
-        normal_generator(unit))
+        __generator(
+            _const.DARK_RED) if type_ == "damage" else
+        __generator(
+            _const.DARK_BLUE, "blue_light") if type_ == "recovery" else
+        __generator(
+            _const.DARK_GREEN, "purple_bubble") if type_ == "poison" else
+        __summon_generator() if type_ == "summon" else
+        __skill_generator() if type_ == "skill" else
+        __normal_generator())

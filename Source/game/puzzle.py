@@ -55,13 +55,13 @@ class _Puzzle(__mode.Mode):
                 if self._manager.is_done:
                     self._switch(self._manager.is_win)
             if self._manager.is_paused:
+                screen = __screen.Screen.get_base()
                 if not is_paused:
-                    __screen.Screen.get_base().blit(paused.image, paused.rect)
+                    screen.blit(paused.image, paused.rect)
                     is_paused = True
                 self._fade.update()
-                __screen.Screen.get_base().blit(
-                    self._fade.image, self._fade.rect.topleft)
-                self._expansion()
+                screen.blit(self._fade.image, self._fade.rect.topleft)
+                self._expand()
                 _pygame.display.flip()
             else:
                 self._update()
@@ -86,15 +86,15 @@ class Duel(_Puzzle):
         """
         import armament.levels as __levels
         import inventories as __inventories
-        bounty = 200
         if is_win:
             level = __levels.get_duel()
             if not __inventories.Level.has(level.number):
+                bounty = 20
                 for reward in level.rewards:
                     __inventories.Card.set(
                         reward, __inventories.Card.get(reward)+1)
                 number, player_level = level.player
-                __inventories.SP.add((player_level+1)*(
+                __inventories.add_sp((player_level+1)*(
                     bounty << 1 if number == _const.PLEYERS else
                     bounty))
                 __inventories.Level.on(level.number)

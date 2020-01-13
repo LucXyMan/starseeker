@@ -22,22 +22,22 @@ class __Phase(object):
         """
         self._system = system
 
-    def sub_completion(self, rival, thinker):
+    def sub_complete(self, rival, thinker):
         u"""コンプリート事前処理。
         """
-    def completion(self):
+    def complete(self):
         u"""コンプリート処理。
         """
     def release(self, rival):
-        u"""魔術開放処理。
+        u"""アルカナ開放処理。
         """
     def throw(self, rival, thinker):
         u"""ピース投下処理。
         """
-    def command_input(self, cmd):
+    def input_command(self, cmd):
         u"""コマンド入出力。
         """
-    def command_run(self, cmd, rival):
+    def run_command(self, cmd, rival):
         u"""コマンド実行。
         """
     def fall(self):
@@ -50,13 +50,13 @@ class __ControlPhase(__Phase):
     """
     __slots__ = ()
 
-    def command_input(self, cmd):
+    def input_command(self, cmd):
         u"""コマンド入力。
         """
         if cmd:
             self._system.cmds += cmd
 
-    def _sys_cmd(self, cmd):
+    def _run_system_command(self, cmd):
         u"""音量調整など。
         """
         if cmd == _const.VOLUMEUP_COMMAND:
@@ -76,11 +76,11 @@ class BootPhase(__ControlPhase):
     """
     __slots__ = ()
 
-    def command_run(self, cmd, rival):
+    def run_command(self, cmd, rival):
         u"""通常時コマンド。
         """
         if cmd and not rival.is_game_over:
-            self._sys_cmd(cmd)
+            self._run_system_command(cmd)
 
 
 class ThrowingPhase(__ControlPhase):
@@ -89,22 +89,16 @@ class ThrowingPhase(__ControlPhase):
     """
     __slots__ = ()
 
-    def sub_completion(self, rival, thinker):
+    def sub_complete(self, rival, thinker):
         u"""ラインコンプリートの前の事前処理。
         消去したラインをチャージ、リソースの処理等。
         """
         import sprites.effects as __effects
 
-        def __get_name(skill):
-            u"""スキル名取得。
-            """
-            name, _ = skill.split("#")
-            return name
-
         def __completion_finish():
             u"""補完終了時処理。
             """
-            def __shard_apply():
+            def __apply_shard():
                 u"""シャード効果適用。
                 """
                 def __recovery():
@@ -128,34 +122,35 @@ class ThrowingPhase(__ControlPhase):
                     battle.player.enhance(type_-1, plus)
                     battle.group.enhance(type_-1, plus)
                 import random as __random
-                resorce = self._system.resorce
-                for type_ in range(len(resorce.shards)):
+                resource = self._system.resource
+                for type_ in range(len(resource.shards)):
                     skills = (
                         _const.LIFE_BOOST_SKILL, _const.MIGHTY_SKILL,
                         _const.TOUGHNESS_SKILL, _const.SPEEDSTER_SKILL)
-                    name = __get_name(skills[type_])
-                    plus = resorce.release(type_)
-                    plus = plus << 1 if self._system.has_skill(name) else plus
-                    if type_ == 0:
-                        __recovery()
-                    else:
-                        __enhence()
+                    plus = resource.release(type_)
+                    if 0 < plus:
+                        has_skill = self._system.flash(skills[type_])
+                        plus = plus << 1 if has_skill else plus
+                        if type_ == 0:
+                            __recovery()
+                        else:
+                            __enhence()
 
             def __attack(rival):
                 u"""プレイヤーとモンスターグループのチャージと攻撃。
                 """
-                if puzzle.del_lines:
+                if puzzle.one_pieces:
                     damage = 0
                     effects = []
-                    battle.player.charge(puzzle.del_lines)
-                    battle.group.charge(puzzle.del_lines)
-                    puzzle.del_line_clear()
+                    battle.player.charge(puzzle.one_pieces)
+                    battle.group.charge(puzzle.one_pieces)
+                    puzzle.clear_line()
                     stroke, lv = battle.player.attack()
                     if stroke:
                         damage += stroke
                         effect = battle.player.weapon.get_enchant(lv)
                         if effect:
-                            weapon, _, _, _ = battle.equip
+                            weapon, _, _, _ = battle.equip_huds
                             weapon.flash()
                             effects.append(effect)
                     for card in battle.hand:
@@ -173,14 +168,25 @@ class ThrowingPhase(__ControlPhase):
                                 effects.append(effect)
                     rival.damage_calc(self._system, damage, effects)
 
-            def __helm_effect():
-                u"""兜によるブロック持続効果。
-                自分の防具効果によって防がれる場合がある。
+            def __effect_joker():
+                u"""ジョーカー減衰効果。
+                """
+                jokers = battle.hand.jokers
+                if jokers and not self._system.flash(_const.TALISMAN_SKILL):
+                    for card in jokers:
+                        if self._system.resource.disappear():
+                            card.flash()
+                        else:
+                            break
+
+            def __effect_head():
+                u"""頭防具によるブロック持続効果。
+                自分の体防具効果によって防がれる場合がある。
                 """
                 effect = battle.player.helm.get_persistence(turn)
                 if effect:
                     new, old, prm = effect
-                    _, head, armor, _ = battle.equip
+                    _, head, armor, _ = battle.equip_huds
                     if battle.player.armor.is_prevention(new):
                         armor.flash()
                     elif (
@@ -189,7 +195,7 @@ class ThrowingPhase(__ControlPhase):
                     ):
                         head.flash()
 
-            def __card_effect():
+            def __effect_card():
                 u"""カードによる持続効果。
                 自分の防具効果によって防がれる場合がある。
                 """
@@ -197,7 +203,7 @@ class ThrowingPhase(__ControlPhase):
                     effect = card.arcanum.get_persistence(turn)
                     if effect:
                         new, old, prm = effect
-                        _, _, armor, _ = battle.equip
+                        _, _, armor, _ = battle.equip_huds
                         if battle.player.armor.is_prevention(new):
                             armor.flash()
                         elif (
@@ -206,7 +212,7 @@ class ThrowingPhase(__ControlPhase):
                         ):
                             card.flash()
 
-            def __creature_effect():
+            def __effect_creature():
                 u"""クリーチャーによる持続効果。
                 自分の防具効果によって防がれる場合がある。
                 """
@@ -215,33 +221,24 @@ class ThrowingPhase(__ControlPhase):
                     if effect:
                         new, old, prm = effect
                         if battle.player.armor.is_prevention(new):
-                            _, _, armor, _ = battle.equip
+                            _, _, armor, _ = battle.equip_huds
                             armor.flash()
                         elif (
                             not battle.group.is_prevention(new) and
                             self._system.puzzle.field.replace(prm, (new, old))
                         ):
                             creature.flash("skill")
-
-            def __joker_effect():
-                u"""ジョーカーのスター減少効果。
-                """
-                name = __get_name(_const.TALISMAN_SKILL)
-                if not self._system.has_skill(name):
-                    for card in battle.jokers:
-                        if self._system.resorce.disappear():
-                            card.flash()
+            __apply_shard()
+            __attack(rival)
+            __effect_joker()
+            self._system.forward()
+            turn = self._system.turn
+            __effect_head()
+            __effect_card()
+            __effect_creature()
             puzzle.field.turn()
             puzzle.update_parameter()
             puzzle.is_completed = False
-            __shard_apply()
-            __attack(rival)
-            self._system.forward()
-            turn = self._system.turn
-            __helm_effect()
-            __card_effect()
-            __creature_effect()
-            __joker_effect()
             self._system.cmds = ""
             self._system.set_thrown()
             if thinker:
@@ -256,13 +253,14 @@ class ThrowingPhase(__ControlPhase):
             ):
                 is_effectable = True
                 puzzle.field.set_super_drop()
-            one_pieces = puzzle.field.sub_completion(self._system.resorce)
+            one_pieces = puzzle.field.sub_complete(
+                self._system.resource, detect=self._system.flash)
             if one_pieces:
                 if is_effectable:
                     _sound.SE.play("keen")
                     battle.player.add_effect(__effects.Special(
                         battle.player.rect.center, u"メテオドロップ"))
-                puzzle.del_line_plus(one_pieces)
+                puzzle.extend_line(one_pieces)
                 puzzle.is_completed = True
                 self._system.set_complete()
             else:
@@ -273,18 +271,18 @@ class ThrowingPhase(__ControlPhase):
         """
         self._system.puzzle.fall()
 
-    def command_run(self, cmd, rival):
+    def run_command(self, cmd, rival):
         u"""通常時コマンド。
         """
-        def __pause_command():
+        def __run_pause_command():
             u"""ポーズコマンド。
             """
-            if self._system.is_pauseable:
+            if self._system.is_pause_available:
                 _sound.SE.play("pause")
                 self._system.is_paused = True
                 _sound.BGM.pause()
 
-        def __move_cmd():
+        def __run_move_command():
             u"""上下左右移動コマンド。
             """
             is_moved = is_downed = False
@@ -303,9 +301,9 @@ class ThrowingPhase(__ControlPhase):
             if is_moved:
                 puzzle.update_window()
             if is_downed:
-                puzzle.fall_clear()
+                puzzle.clear_fall()
 
-        def __rotate_cmd():
+        def __run_rotate_command():
             u"""左右回転コマンド。
             """
             if cmd == _const.DECISION_COMMAND:
@@ -315,7 +313,7 @@ class ThrowingPhase(__ControlPhase):
                 puzzle.piece.rotate(puzzle.field, False)
                 puzzle.update_window()
 
-        def __summon_cmd():
+        def __run_summon_command():
             u"""召喚コマンド。
             """
             for i, use_cmd in enumerate((
@@ -330,7 +328,7 @@ class ThrowingPhase(__ControlPhase):
                 _const.USE7_COMMAND, _const.USE8_COMMAND
             )):
                 if cmd == use_cmd:
-                    battle.dump(i)
+                    battle.discard(i)
                     return None
             if cmd == _const.USE_COMMAND:
                 for i in range(len(battle.hand)):
@@ -338,28 +336,28 @@ class ThrowingPhase(__ControlPhase):
                         break
             elif cmd == _const.DELETE_COMMAND:
                 for i in range(len(battle.hand)):
-                    if battle.dump(i):
+                    if battle.discard(i):
                         break
             elif cmd == _const.CANCEL_COMMAND:
-                battle.shuffle()
+                battle.hand.shuffle()
         if (
             cmd and not self._system. puzzle.field.is_active and
             not rival.is_game_over
         ):
             if cmd == _const.START_COMMAND:
-                __pause_command()
+                __run_pause_command()
             else:
                 puzzle = self._system.puzzle
                 battle = self._system.battle
                 if cmd == _const.HOLD_COMMAND:
                     puzzle.hold.capture()
-                __move_cmd()
-                __rotate_cmd()
-                __summon_cmd()
-                self._sys_cmd(cmd)
+                __run_move_command()
+                __run_rotate_command()
+                __run_summon_command()
+                self._run_system_command(cmd)
 
     def release(self, rival):
-        u"""魔術開放処理。
+        u"""アルカナ開放処理。
         """
         if not self._system.puzzle.field.is_active:
             self._system.battle.release(rival)
@@ -385,9 +383,9 @@ class ThrownPhase(__Phase):
                     _const.ADAMANT_PRESS_LEVEL < pressure else
                     _const.SOLID_PRESS_LEVEL >> 1 if
                     _const.SOLID_PRESS_LEVEL < pressure else 1)
-                press, add_pressure = divmod(pressure, level)
+                pressure, remainder = divmod(pressure, level)
                 self._system.accumulate.add_pressure(
-                    add_pressure*_const.PRESS_POINT)
+                    remainder*_const.PRESS_POINT)
                 self._system.cmds = ""
                 if thinker:
                     thinker.clear()
@@ -395,7 +393,7 @@ class ThrownPhase(__Phase):
                     if effect:
                         new, old, prm = effect
                         puzzle.field.replace(prm, (new, old))
-                puzzle.field.press(press, level)
+                puzzle.field.press(pressure, level, detect=self._system.flash)
                 __press()
 
         def __game_over_test():
@@ -423,10 +421,10 @@ class CompletePhase(__Phase):
     """
     __slots__ = ()
 
-    def completion(self):
+    def complete(self):
         u"""コンプリート処理。
         """
         puzzle = self._system.puzzle
         if not puzzle.field.is_active:
-            puzzle.field.completion()
+            puzzle.field.complete()
             self._system.set_throwing()

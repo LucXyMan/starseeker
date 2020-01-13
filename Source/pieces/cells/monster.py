@@ -7,16 +7,30 @@ This software is released under BSD license.
 
 モンスターブロックモジュール。
 """
-import random as _random
-import utils.const as _const
 import block as __block
 import irregular as __irregular
+import utils.const as _const
 
 
 # ---- Interface ----
+class _Reviver(object):
+    u"""復活ブロック。
+    """
+    __slots__ = ()
+
+    def _is_release(self):
+        u"""上下左右どこかに空白が存在する場合に真。
+        """
+        return any(
+            cell and cell.is_blank for
+            cell in self._get_around(self._CROSS))
+
+
 class Mover(object):
     u"""移動ブロック。
     """
+    __slots__ = ()
+
     def _move(self, targets, footprint="Blank", replace=""):
         u"""移動処理。
         """
@@ -35,18 +49,6 @@ class Mover(object):
         return False
 
 
-class _Reviver(object):
-    u"""復活ブロック。
-    """
-    def _is_release(self):
-        u"""上下左右どこかに空白が存在する場合に真。
-        """
-        for cell in self._get_around(self._CROSS):
-            if cell and cell.is_blank:
-                return True
-        return False
-
-
 # ---- Slime ----
 class Slime(__block.Block):
     u"""スライムブロック。
@@ -55,7 +57,7 @@ class Slime(__block.Block):
     _SCORE = _const.QUARTER_SCORE
     _IMAGES = "slime"
     _SMALL_IMAGE = "!_8"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _TARGET_COLOR = "white"
     _MALIGNANCY = 0
 
@@ -115,7 +117,7 @@ class Matango(__block.Block):
     相手のチャージを妨害する無得点ブロック。
     """
     _IMAGES = "matango"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _MALIGNANCY = _const.MID_MALIGNANCY
 
     def effect(self):
@@ -129,14 +131,14 @@ class LargeMatango(__block.Block):
     スターを減少させる。
     """
     _IMAGES = "large_matango"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _MALIGNANCY = _const.MID_MALIGNANCY
 
     @property
     def star_type(self):
         u"""スター種類。
         """
-        return -1
+        return _const.NUMBER_OF_STAR
 
 
 # ---- Demon ----
@@ -144,33 +146,26 @@ class _Demon(__irregular.Invincible, Mover):
     u"""周囲のブロックを捕食する悪魔。
     """
     _EFFECT = "blue_fire"
-    _FRAME_NUM = 4
+    _FRAME = 4
     _MALIGNANCY = _const.HIGH_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
-    def clack(self, flag):
+    def crack(self, flag):
         u"""強制クラックの場合に破壊される。
         """
-        super(_Demon, self).clack(flag)
+        super(_Demon, self).crack(flag)
         if self._is_exorcist_flag(flag) and not isinstance(self, Maxwell):
             self._is_destroyed = True
-
-    def _get_rank(self):
-        u"""悪魔ランク取得。
-        """
-        return (
-            3 if isinstance(self, Maxwell) else
-            2 if isinstance(self, ArchDemon) else
-            1 if isinstance(self, BlockDemon) else
-            0)
 
     def effect(self):
         u"""シャードやブロックを捕食する。
         シャードを捕食した場合、上位デーモンに進化。
         """
-        if (not hasattr(self, "_SUPERIOR") or not self._move(
-            _const.SHARD_NAMES, replace=self._SUPERIOR
-        )) and not self._move(self._FAVO):
-            self.change("Gargoyle", self._get_rank())
+        if (
+            not hasattr(self, "_SUPERIOR") or
+            not self._move(_const.SHARD_NAMES, replace=self._SUPERIOR)
+        ) and not self._move(self._FAVO):
+            self.change("Gargoyle", self._RANK)
 
 
 class BlockEater(_Demon):
@@ -180,6 +175,7 @@ class BlockEater(_Demon):
     _FAVO = "Normal"+"#"+_const.SLIME_NAMES
     _IMAGES = "eater"
     _SUPERIOR = "BlockDemon"
+    _RANK = 0
 
 
 class BlockDemon(_Demon):
@@ -189,6 +185,7 @@ class BlockDemon(_Demon):
     _FAVO = "Normal#Solid"+"#"+_const.SLIME_NAMES
     _IMAGES = "demon"
     _SUPERIOR = "ArchDemon"
+    _RANK = 1
 
 
 class ArchDemon(_Demon):
@@ -197,25 +194,28 @@ class ArchDemon(_Demon):
     """
     _FAVO = _const.BASIC_NAMES+"#"+_const.SLIME_NAMES+"#"+_const.SHARD_NAMES
     _IMAGES = "arch_demon"
+    _RANK = 2
 
 
 class Maxwell(_Demon):
     u"""マクスウェルの悪魔ブロック。
     スターを生成する。
     """
+    __box = []
     _FAVO = _const.BASIC_NAMES
     _IMAGES = "maxwell"
     _MALIGNANCY = 0
     _TARGET_COLOR = "white"
-    __box = []
+    _RANK = 3
 
     @classmethod
     def __get_star(cls):
         u"""スター用のくじ引き。
         """
+        import random as __random
         if not cls.__box:
             cls.__box = range(7)
-            _random.shuffle(cls.__box)
+            __random.shuffle(cls.__box)
         return cls.__box.pop()
 
     def __init__(self, point, state, is_virtual):
@@ -235,7 +235,7 @@ class Maxwell(_Demon):
             _const.BASIC_NAMES+"#"+_const.SLIME_NAMES,
             footprint=stars[self._state]
         ):
-            self.change("Gargoyle", self._get_rank())
+            self.change("Gargoyle", self._RANK)
 
 
 class KingDemon(__irregular.Invincible):
@@ -243,7 +243,7 @@ class KingDemon(__irregular.Invincible):
     ブロックとアイテムを食べる。
     """
     __ENDURANCE = 8
-    _FRAME_NUM = 4
+    _FRAME = 4
     _IMAGES = "king_demon"
     _MALIGNANCY = _const.HIGH_MALIGNANCY
 
@@ -291,7 +291,7 @@ class KingDemon(__irregular.Invincible):
                         self._get((x, y)).change("BlockEater")
 
 
-class Gargoyle(__block.Block, _Reviver):
+class Gargoyle(__block.Block):
     u"""悪魔像ブロック。
     周囲のブロックに反応する。
     """
@@ -325,30 +325,23 @@ class Gargoyle(__block.Block, _Reviver):
 class _Ghost(__irregular.Invincible, Mover):
     u"""ゴーストブロック。
     """
-    _FRAME_NUM = 4
+    _FRAME = 4
     _MALIGNANCY = _const.HIGH_MALIGNANCY
+    _SCORE = _const.DOUBLE_SCORE
 
-    def clack(self, flag):
+    def crack(self, flag):
         u"""強制クラックの場合に破壊される。
         """
-        super(_Ghost, self).clack(flag)
+        super(_Ghost, self).crack(flag)
         if self._is_exorcist_flag(flag):
             self._is_destroyed = True
 
     def effect(self):
         u"""フィールドを移動する。
         """
-        def __get_rank():
-            u"""幽霊ランク取得。
-            """
-            return (
-                2 if isinstance(self, PoisonGhost) else
-                1 if isinstance(self, FireGhost) else 0)
-        if not self._move(
-            "Blank", footprint=self._FOOTPRINT if
-            hasattr(self, "_FOOTPRINT") else "Blank"
-        ):
-            self.change("RIP", __get_rank())
+        footprint = self._FOOTPRINT if hasattr(self, "_FOOTPRINT") else "Blank"
+        if not self._move("Blank", footprint=footprint):
+            self.change("RIP", self._TYPE)
 
 
 class FireGhost(_Ghost):
@@ -357,6 +350,7 @@ class FireGhost(_Ghost):
     """
     _FOOTPRINT = "Magma"
     _IMAGES = "fire_ghost"
+    _TYPE = 0
 
 
 class IceGhost(_Ghost):
@@ -365,6 +359,7 @@ class IceGhost(_Ghost):
     """
     _FOOTPRINT = "Ice"
     _IMAGES = "ice_ghost"
+    _TYPE = 1
 
 
 class PoisonGhost(_Ghost):
@@ -373,6 +368,7 @@ class PoisonGhost(_Ghost):
     """
     _FOOTPRINT = "Poison"
     _IMAGES = "poison_ghost"
+    _TYPE = 2
 
 
 class RIP(__irregular.Invincible, _Reviver):
@@ -382,10 +378,10 @@ class RIP(__irregular.Invincible, _Reviver):
     _SCORE = _const.SINGLE_SCORE
     _MALIGNANCY = _const.MID_MALIGNANCY
 
-    def clack(self, flag):
+    def crack(self, flag):
         u"""強制クラックの場合に破壊される。
         """
-        super(RIP, self).clack(flag)
+        super(RIP, self).crack(flag)
         if self._is_exorcist_flag(flag):
             self._is_destroyed = True
 
@@ -396,5 +392,5 @@ class RIP(__irregular.Invincible, _Reviver):
         if self._piece.height <= self._point.bottom:
             self.change("Ruined")
         elif self._is_release():
-            names = "IceGhost", "FireGhost", "PoisonGhost"
-            self.change(names[self._state])
+            ghosts = "FireGhost", "IceGhost", "PoisonGhost"
+            self.change(ghosts[self._state])

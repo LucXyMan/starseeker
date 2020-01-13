@@ -8,6 +8,7 @@ This software is released under BSD license.
 パラメータモジュール。
 """
 import utils.const as _const
+import utils.general as _general
 
 
 class Parameter(object):
@@ -15,25 +16,25 @@ class Parameter(object):
     AIに受け渡す各種パラメータを格納する。
     """
     __slots__ = (
-        "__catalyst", "__equip_broken_state", "__field", "__field_one_eighth",
-        "__hand", "__has_damaged", "__has_health", "__has_alone_chest",
-        "__has_normal", "__hold", "__hold_item_state", "__is_full_group",
-        "__is_group_exsit", "__is_hold_captured", "__is_sorcery_usable",
-        "__jokers", "__piece", "__piece_pos", "__recepters", "__resorce",
-        "__skills")
+        "__catalyst", "__donors", "__equip_broken_state", "__field",
+        "__field_one_eighth", "__hand", "__has_damaged", "__has_health",
+        "__has_alone_chest", "__has_normal", "__hold", "__hold_item_state",
+        "__is_full_group", "__is_group_exsit", "__is_hold_captured",
+        "__is_arcana_usable", "__jokers", "__piece", "__piece_pos",
+        "__resource", "__skills")
 
     # ---- System ----
     @property
-    def resorce(self):
+    def resource(self):
         u"""リソース取得。
         """
-        return self.__resorce
+        return self.__resource
 
-    @resorce.setter
-    def resorce(self, value):
+    @resource.setter
+    def resource(self, value):
         u"""リソース設定。
         """
-        self.__resorce = value
+        self.__resource = value
 
     # ---- Skill ----
     @property
@@ -52,35 +53,28 @@ class Parameter(object):
     def has_phantom_thief(self):
         u"""ファントムシーフスキル判定。
         """
-        name, _ = _const.PHANTOM_THIEF_SKILL.split("#")
+        name = _general.get_skill_names(_const.PHANTOM_THIEF_SKILL)
         return name in self.__skills.split("#")
 
     @property
     def has_soul_eat(self):
         u"""ソウルイートスキル判定。
         """
-        name, _ = _const.SOUL_EAT_SKILL.split("#")
+        name = _general.get_skill_names(_const.SOUL_EAT_SKILL)
         return name in self.__skills.split("#")
 
     @property
     def has_reverse_sorcery(self):
-        u"""魔術逆転スキル判定。
+        u"""ソーサリー反転スキル判定。
         """
-        name, _ = _const.REVERSE_SORCERY_SKILL.split("#")
+        name = _general.get_skill_names(_const.REVERSE_SORCERY_SKILL)
         return name in self.__skills.split("#")
 
     @property
     def has_purify(self):
         u"""ジョーカー削除スキル判定。
         """
-        name, _ = _const.PURIFY_SKILL.split("#")
-        return name in self.__skills.split("#")
-
-    @property
-    def has_talisman(self):
-        u"""タリスマンスキル判定。
-        """
-        name, _ = _const.TALISMAN_SKILL.split("#")
+        name = _general.get_skill_names(_const.PURIFY_SKILL)
         return name in self.__skills.split("#")
 
     # ---- Equip ----
@@ -233,16 +227,16 @@ class Parameter(object):
         self.__jokers = int(value)
 
     @property
-    def is_sorcery_useable(self):
-        u"""魔術使用可能状態取得。
+    def is_arcana_available(self):
+        u"""アルカナ使用可能状態取得。
         """
-        return self.__is_sorcery_usable
+        return self.__is_arcana_usable
 
-    @is_sorcery_useable.setter
-    def is_sorcery_useable(self, value):
-        u"""魔術使用可能状態設定。
+    @is_arcana_available.setter
+    def is_arcana_available(self, value):
+        u"""アルカナ使用可能状態設定。
         """
-        self.__is_sorcery_usable = bool(value)
+        self.__is_arcana_usable = bool(value)
 
     # ---- Creature ----
     @property
@@ -306,13 +300,13 @@ class Parameter(object):
         self.__is_group_exsit = bool(value)
 
     @property
-    def recepters(self):
+    def donors(self):
         u"""受容可能クリーチャー名セット取得。
         """
-        return self.__recepters
+        return self.__donors
 
-    @recepters.setter
-    def recepters(self, value):
+    @donors.setter
+    def donors(self, value):
         u"""受容可能クリーチャー名セット設定。
         """
-        self.__recepters = set(value)
+        self.__donors = set(value)

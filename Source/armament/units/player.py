@@ -34,17 +34,18 @@ class Player(__unit.Unit):
                 direction="Right" if self._is_right else "Left",
                 another="Another" if self.__is_another else "Basic")
 
-    def set_equip(self, wp, hlm, armr, acs):
+    # ---- Equip ----
+    def set_equip(self, equip):
         u"""装備設定。
         """
         import armament.equips as __equips
 
-        class __BrokenEquip(object):
+        class __BreakableEquip(object):
             u"""装備アダプタ。
             装備の破損を表現する。
             """
             __slots__ = "__broken", "__equip"
-            __TIME_TO_RECOVERY = 8
+            __TIME_TO_RECOVERY = 24
 
             def __init__(self, equip):
                 u"""コンストラクタ。
@@ -62,49 +63,47 @@ class Player(__unit.Unit):
                 u"""武器効果取得。
                 """
                 effect = self.__equip.get_enchant(lv)
-                return effect if effect and not self.__is_broken else ()
+                return () if self.__broken else effect
 
             def get_persistence(self, turn):
                 u"""頭防具効果取得。
                 """
                 effect = self.__equip.get_persistence(turn)
-                return effect if effect and not self.__is_broken else ()
+                return () if self.__broken else effect
 
             def is_prevention(self, target):
                 u"""ブロック変化防止判定。
                 """
-                if self.__equip.is_prevention(target) and not self.__is_broken:
-                    return True
-                else:
-                    return False
+                return (
+                    not self.__broken and
+                    self.__equip.is_prevention(target))
 
             # ---- Break and Repair ----
-            def break_(self):
-                u"""破損させる。
+            def break_(self, time=__TIME_TO_RECOVERY):
+                u"""破損処理。
                 """
-                self.__broken = self.__TIME_TO_RECOVERY
+                is_broken = False
+                if self.__broken <= 0:
+                    is_broken = True
+                self.__broken = time
+                return is_broken
 
             def repair(self):
-                u"""修復する。
-                修復した場合、Trueを返す。
+                u"""修復処理。
+                修復した場合Trueを返す。
                 """
                 if 0 < self.__broken:
                     self.__broken = 0
                     return True
                 return False
 
-            # ---- Property ----
-            @property
-            def __is_broken(self):
-                u"""破損状態取得。
-                徐々に修復される。
+            def turn(self):
+                u"""毎ターン少しずつ装備修復。
                 """
                 if 0 < self.__broken:
                     self.__broken -= 1
-                    return True
-                else:
-                    return False
 
+            # ---- Property ----
             @property
             def name(self):
                 u"""名前取得。
@@ -118,18 +117,10 @@ class Player(__unit.Unit):
                 return self.__equip.number
 
             @property
-            def addition(self):
-                u"""アクセサリによるパターン変更リクエストを取得。
-                """
-                return (
-                    self.__equip.addition if self.__equip.addition and
-                    not self.__is_broken else ())
-
-            @property
             def value(self):
                 u"""能力値取得。
                 """
-                return 0 if self.__is_broken else self.__equip.value
+                return 0 if self.__broken else self.__equip.value
 
             @property
             def image_number(self):
@@ -144,29 +135,50 @@ class Player(__unit.Unit):
                 return self.__equip.icon
 
             @property
-            def is_useable(self):
+            def is_available(self):
                 u"""使用可能状態取得。
                 """
                 return (
                     False if self.__equip.number == 0 else
                     self.__broken <= 0)
+
+            # ------ Ability ------
+            @property
+            def spell(self):
+                u"""装飾効果取得。
+                """
+                return () if self.__broken else self.__equip.spell
+
+            @property
+            def skills(self):
+                u"""スキル取得。
+                """
+                return "" if self.__broken else self.__equip.skills
+        weapon, head, body, accessory = equip
         self.__equip = (
-            __BrokenEquip(__equips.get(wp)),
-            __BrokenEquip(__equips.get(hlm)),
-            __BrokenEquip(__equips.get(armr)),
-            __BrokenEquip(__equips.get(acs)))
+            __BreakableEquip(__equips.get(weapon)),
+            __BreakableEquip(__equips.get(head)),
+            __BreakableEquip(__equips.get(body)),
+            __BreakableEquip(__equips.get(accessory)))
+
+    def turn(self):
+        u"""ターン毎の処理。
+        """
+        self.count_down()
+        for item in self.__equip:
+            item.turn()
 
     # ---- Attack ----
     def attack(self):
         u"""攻撃処理。
         """
-        lv = self._power/self._packet
+        level = self._power/self._packet
         power = self.release()
         if 0 < power:
             self.flash()
             stroke = self._get_attack(
                 self._data.str+self.weapon.value, self.attack_level, power)
-            return stroke, lv
+            return stroke, level
         return 0, 0
 
     # ---- Update ----
@@ -245,7 +257,14 @@ class Player(__unit.Unit):
 
     @property
     def accessory(self):
-        u"""装飾品取得。
+        u"""装飾取得。
         """
         _, _, _, accessory = self.__equip
         return accessory
+
+    @property
+    def skills(self):
+        u"""スキル取得。
+        """
+        skills = tuple(item.skills for item in self.__equip if item.skills)
+        return reduce(lambda x, y: x+"#"+y, skills) if skills else ""

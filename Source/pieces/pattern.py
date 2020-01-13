@@ -238,7 +238,7 @@ class Rotatable(Pattern):
     def __get_rotations(self):
         u"""全回転パターン取得。
         """
-        def __get_rotate():
+        def __get_rotation():
                 u"""回転後テーブル取得。
                 """
                 def __get_copy():
@@ -287,7 +287,7 @@ class Rotatable(Pattern):
         shapes = self._shapes
         rotate_pattern = {0: shapes}
         for angle in range(1, 4):
-            shapes = __get_rotate()
+            shapes = __get_rotation()
             __adjust_shapes()
             __rotate_shapes()
             rotate_pattern[angle] = shapes
@@ -322,10 +322,8 @@ class Rotatable(Pattern):
         is_changed = False
         self.rotate(_const.A0)
         for shape in self.__get_shapes():
-            if (
-                (is_lchange or not shape.is_large) and
-                shape.type in old.split("#")
-            ):
+            is_changeable = is_lchange or not shape.is_large
+            if is_changeable and shape.type in old.split("#"):
                 shape.type = new
                 shape.state = state
                 is_changed = True
@@ -353,15 +351,15 @@ class Rotatable(Pattern):
                 def __write():
                     u"""シェイプサイズに合わせて'1'を書き込む。
                     """
-                    size = self._shapes[y][x].size
-                    w, h = x+size[0], y+size[1]
-                    for _y in range(y, h):
-                        for _x in range(x, w):
-                            mask[_y][_x] = 1
+                    size = self._shapes[top][left].size
+                    right, bottom = left+size[0], top+size[1]
+                    for y in range(top, bottom):
+                        for x in range(left, right):
+                            mask[y][x] = 1
                 mask = self._get_empty((self.width, self.height), 0)
-                for y in range(self.height):
-                    for x in range(self.width):
-                        if self._shapes[y][x]:
+                for top in range(self.height):
+                    for left in range(self.width):
+                        if self._shapes[top][left]:
                             __write()
                 return mask
             shapes = __get_bit()
@@ -376,8 +374,7 @@ class Rotatable(Pattern):
                 "O" if self.__O_TETRO_FORM in rotations else
                 "S" if self.__S_TETRO_FORM in rotations else
                 "T" if self.__T_TETRO_FORM in rotations else
-                "Z" if self.__Z_TETRO_FORM in rotations else
-                "?")
+                "Z" if self.__Z_TETRO_FORM in rotations else "?")
         if self.__form == "":
             self.__form = __get_form()
         return self.__form

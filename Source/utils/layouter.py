@@ -172,7 +172,7 @@ class Game(_Layouter):
     # ---- HUD ----
     @classmethod
     def set_stars(cls, stars, id_):
-        u"""スター情報位置設定。
+        u"""スター位置設定。
         """
         if id_ == 0:
             x = 0
@@ -187,7 +187,7 @@ class Game(_Layouter):
 
     @classmethod
     def set_equip(cls, system, equip):
-        u"""装備情報位置設定。
+        u"""装備位置設定。
         """
         cls.__panel.centery = system.puzzle.window.rect.centery
         if system.id == 0:
@@ -210,31 +210,29 @@ class Game(_Layouter):
         hand = system.battle.hand
         rect = _pygame.Rect((0, 0), (0, _const.GRID << 2))
         cls.__panel.centery = system.puzzle.window.rect.centery
+        y = 0
         if system.id == 0:
             cls.__panel.left = cls._screen.left
             rect.bottomleft = cls.__panel.bottomleft
-            y = 0
-            for i, card in enumerate(hand):
+            for card in hand:
                 if not is_set_rect:
                     card.rect.topleft = rect.left, rect.top+y
                 card.dest.topleft = rect.left, rect.top+y
-                card.draw_group.change_layer(card, i)
                 y += card.rect.height
         else:
             cls.__panel.right = cls._screen.right
             rect.bottomright = cls.__panel.bottomright
-            y = 0
-            for i, card in enumerate(hand):
+            for card in hand:
                 if not is_set_rect:
                     card.rect.topright = rect.right, rect.top+y
                 card.dest.topright = rect.right, rect.top+y
-                card.draw_group.change_layer(card, i)
                 y += card.rect.height
 
     @classmethod
     def set_block_level(cls, strings):
-        u"""ブロックレベル文字列位置設定。
+        u"""ブロックレベル位置設定。
         """
+        strings = tuple(strings)
         strings[1].rect.midbottom = cls._screen.midbottom
         strings[0].rect.midright = strings[1].rect.midleft
         strings[2].rect.midleft = strings[1].rect.midright
@@ -242,9 +240,9 @@ class Game(_Layouter):
     # ---- Unit ----
     @classmethod
     def set_player(cls, player, window):
-        u"""プレイヤーの位置設定。
+        u"""プレイヤー位置設定。
         """
-        player.dest.midbottom = player.rect.midbottom = (
+        player.rect.midbottom = (
             window.rect.centerx, window.rect.centery+(window.rect.h >> 3))
 
     @classmethod
@@ -328,8 +326,8 @@ class Menu(_Layouter):
             midtop = selector.rect.midbottom
 
     @classmethod
-    def set_info(cls, sprite):
-        u"""情報表示位置設定。
+    def set_notice(cls, sprite):
+        u"""通知位置設定。
         """
         sprite.rect.midtop = cls._screen.midtop
 
@@ -340,10 +338,10 @@ class Menu(_Layouter):
         cls.__quarter.midtop = cls._screen.midtop
         sprite.rect.center = cls.__quarter.center
 
-    # ---- Info ----
+    # ---- Notice ----
     @classmethod
     def set_time(cls, sprite):
-        u"""時間文字列位置設定。
+        u"""時間位置設定。
         """
         sprite.rect.bottomright = cls._screen.bottomright
 

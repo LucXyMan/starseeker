@@ -13,6 +13,6 @@ import string as __string
 import window as __window
 Decorator = __decorator.Decorator
 Shadow = __shadow.Shadow
-Info = __string.Info
+Notice = __string.Notice
 String = __string.String
 Window = __window.Window

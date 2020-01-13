@@ -88,10 +88,10 @@ class Thinker(object):
                 __pygame.quit()
                 raise RuntimeError("Process Abnormal Termination.")
 
-        def __command_put():
+        def __output_command():
             u"""コマンド出力。
             """
-            def __command_analysis():
+            def __analyse_command():
                 u"""コマンド解析。
                 現在位置より上のコマンドは取り除かれる。
                 """
@@ -124,11 +124,10 @@ class Thinker(object):
                 not self.__is_standby and self.__cmds
             ):
                 field = self.__system.puzzle.field
-                name, _ = __const.REVERSE_SORCERY_SKILL.split("#")
                 has_joker = self.__system.puzzle.has_joker
+                has_rs = self.__system.has_skill(__const.REVERSE_SORCERY_SKILL)
                 has_item = (
-                    self.__system.puzzle.has_item or
-                    has_joker and self.__system.has_skill(name))
+                    self.__system.puzzle.has_item or has_joker and has_rs)
                 is_more_than_half = field.highest <= field.height >> 1
                 rush = has_item+is_more_than_half-has_joker
                 waiting = self.__waiting+1
@@ -139,7 +138,7 @@ class Thinker(object):
                 if self.__waiting == 0:
                     return (
                         self.__cmds.popleft().queue if
-                        self.__cmds[0].is_basic else __command_analysis())
+                        self.__cmds[0].is_basic else __analyse_command())
                 self.__time = 0
             return ""
 
@@ -148,7 +147,7 @@ class Thinker(object):
             """
             import Queue as __Queue
 
-            def __search_process():
+            def __search():
                 u"""サーチ処理。
                 """
                 cmds, = result
@@ -161,7 +160,7 @@ class Thinker(object):
                 self.__time = 0
                 self.__is_thinking = False
 
-            def __signal_process():
+            def __signal():
                 u"""シグナル処理。
                 """
                 work, = result
@@ -180,9 +179,9 @@ class Thinker(object):
             try:
                 name, result = self.__out.get_nowait()
                 if name == "search":
-                    __search_process()
+                    __search()
                 elif name == "signal":
-                    __signal_process()
+                    __signal()
                 self.__time = 0
             except __Queue.Empty:
                 pass
@@ -190,7 +189,7 @@ class Thinker(object):
             if not self.__is_standby:
                 self.__time += 1
             __detect_timeout()
-            command = __command_put()
+            command = __output_command()
             if command:
                 return command
             else:

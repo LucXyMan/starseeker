@@ -7,8 +7,8 @@ This software is released under BSD license.
 
 基本ブロックモジュール。
 """
-import utils.const as _const
 import block as __block
+import utils.const as _const
 
 
 class Basic(__block.Block):

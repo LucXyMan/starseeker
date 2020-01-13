@@ -11,11 +11,10 @@ __cache = {}
 
 
 def __get_key(function, *args, **kw):
-    u"""キャッシュキー取得。
-    デフォルトで使用される。
+    u"""デフォルトキャッシュキー取得。
     """
-    return u"{method}##{args}##{kw}".format(
-        method=u"{module}.{name}".format(
+    return u"<{method}##{args}##{kw}".format(
+        method=u"{module}.{name}>".format(
             module=function.__module__, name=function.__name__),
         args=tuple(unicode(arg) for arg in args), kw=tuple(
             u"{key}#{value}".format(key=k, value=hash(v)) for
@@ -23,29 +22,19 @@ def __get_key(function, *args, **kw):
 
 
 def memoize(cache=__cache, get_key=__get_key):
-    u"""関数の戻り値をキャッシュするデコレータ。
+    u"""メモ化デコレータ。
     """
     def _memoize(function):
+        u"""デコレータ本体。
+        """
         def __memoize(*args, **kw):
+            u"""関数をラップ。
+            """
             key = get_key(function, *args, **kw)
             try:
                 return cache[key]
             except KeyError:
-                value = cache[key] = function(*args, **kw)
-                return value
+                cache[key] = function(*args, **kw)
+                return cache[key]
         return __memoize
     return _memoize
-
-
-def clear():
-    u"""キャッシュクリア。
-    """
-    __cache.clear()
-
-
-def print_cache():
-    u"""キャッシュ表示。
-    """
-    print len(__cache)
-    for item in __cache:
-        print item

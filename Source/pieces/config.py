@@ -217,7 +217,7 @@ def get_total():
     return len(__levels)
 
 
-def get_levels(start, end):
+def get_levels(level):
     u"""レベルに応じたパターン取得。
     """
-    return [__pattern.Rotatable(*__levels[i]) for i in range(start, end)]
+    return [__pattern.Rotatable(*__levels[i]) for i in range(0, level)]

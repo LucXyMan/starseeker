@@ -7,8 +7,9 @@ This software is released under BSD license.
 
 システムモジュール。
 """
-import utils.const as _const
 import phase as _phase
+import utils.const as _const
+import utils.general as _general
 
 
 class System(object):
@@ -16,10 +17,10 @@ class System(object):
     """
     __slots__ = (
         "__accumulate", "__base_skills", "__battle", "__cmds", "__game_over",
-        "__id", "__is_pauseable", "__is_paused", "__is_playing",
-        "__is_transparent", "__phase", "__pressure", "__puzzle", "__resorce",
+        "__id", "__is_pause_available", "__is_paused", "__is_playing",
+        "__is_transparent", "__phase", "__pressure", "__puzzle", "__resource",
         "__thinker", "__turn")
-    __ROUND = 0b11111111
+    __TURN_OVER = 0b11111111
 
     def __init__(self, level, parent, id_):
         u"""システム初期化。
@@ -33,10 +34,10 @@ class System(object):
             """
             import accumulate as __accumulate
             import armament.skill as __skill
-            import resorce as __resorce
+            import resource as __resource
             import utils.layouter as __layouter
             self.__is_playing = True
-            self.__is_pauseable = True
+            self.__is_pause_available = True
             self.__is_paused = False
             self.__id = int(id_)
             self.__turn = 0
@@ -47,9 +48,9 @@ class System(object):
             )) if level.skill else ""
             self.__thinker = None
             self.__accumulate = __accumulate.Accumulate()
-            self.__resorce = __resorce.Resorce(level.deck)
+            self.__resource = __resource.Resource(level.deck)
             __layouter.Game.set_stars(
-                (__huds.Star(self.__resorce, i) for i in range(7)), self.__id)
+                (__huds.Star(self.__resource, i) for i in range(7)), self.__id)
 
         def __set_puzzle():
             u"""パズルシステム設定。
@@ -65,33 +66,145 @@ class System(object):
             import battle as __battle
             self.__battle = __battle.System(self, level)
             __huds.Pressure(self.__battle.player, self)
-            name, _ = _const.FORCE_JOKER_SKILL.split("#")
-            if self.has_skill(name):
-                self.__battle.draw(*__collectible.Collectible.get_by_name(
+            if self.has_skill(_const.FORCE_JOKER_SKILL):
+                self.__battle.hand.draw(*__collectible.Collectible.get_by_name(
                     u"リバースサモン", u"リバースソーサリー"))
+            self.__battle.turn()
 
         def __set_test():
             u"""テスト用設定。
             """
             if _const.IS_SYSTEM_TEST:
                 if self.__id == 0:
-                    for i in range(7):
-                        self.__resorce.inc_and_dec(i, 16)
-                    self.__battle.draw(*__collectible.Collectible.get_by_name(
-                        u"オールデリート", u"オールデリート",
-                        u"オールデリート", u"オールデリート"))
+                    for i in range(_const.NUMBER_OF_STAR):
+                        self.__resource.increase(i, 0)
+                    self.__battle.hand.draw(
+                        *__collectible.Collectible.get_by_name())
                 else:
-                    for i in range(7):
-                        self.__resorce.inc_and_dec(i, 16)
-                    self.__battle.draw(*__collectible.Collectible.get_by_name(
-                        u"アンロック", u"アンロック",
-                        u"アンロック", u"リバースソーサリー"))
+                    for i in range(_const.NUMBER_OF_STAR):
+                        self.__resource.increase(i, 0)
+                    self.__battle.hand.draw(
+                        *__collectible.Collectible.get_by_name())
         __set_parameter()
         __set_puzzle()
         __set_battle()
         __set_test()
         self.set_boot()
 
+    # ---- Phase ----
+    def complete(self, rival):
+        u"""ラインコンプリート処理。
+        """
+        self.__phase.sub_complete(rival, self.__thinker)
+        self.__phase.complete()
+
+    def release(self, rival):
+        u"""アルカナ開放処理。
+        """
+        self.__phase.release(rival)
+
+    def throw(self, rival):
+        u"""ブロック投下処理。
+        """
+        self.__phase.throw(rival, self.__thinker)
+
+    def fall(self):
+        u"""ブロック自動落下処理。
+        """
+        self.__phase.fall()
+
+    # ------ Command ------
+    def input_command(self, cmd):
+        u"""コマンド入力。
+        """
+        self.__phase.input_command(cmd)
+
+    def run_command(self, rival):
+        u"""コマンドの処理全般。
+        """
+        while self.__cmds:
+            self.__phase.run_command(self.__cmds[0], rival)
+            self.__cmds = self.__cmds[1:]
+
+    # ---- Process ----
+    def damage_calc(self, rival, damage, effects):
+        u"""ダメージ計算。
+        """
+        def __vampire():
+            u"""スター吸収スキル処理。
+            """
+            import random as __random
+            targets = tuple(j for j, is_exsit in enumerate(
+                _const.STAR_ENERGY <= i for i in self.resource.stars
+            ) if is_exsit)
+            if (
+                targets and rival.flash(_const.VAMPIRE_SKILL) and
+                not self.flash(_const.TALISMAN_SKILL)
+            ):
+                target = __random.choice(targets)
+                self.resource.decrease(target, _const.STAR_ENERGY)
+                rival.resource.increase(target, _const.STAR_ENERGY)
+
+        def __rob_card():
+            u"""カード強奪スキル処理。
+            """
+            if (
+                self.__battle.hand and rival.flash(_const.ROB_CARD_SKILL) and
+                not self.flash(_const.SAFETY_SKILL)
+            ):
+                for i, card in enumerate(self.__battle.hand):
+                    if card.arcanum.type != _const.JOKER_ARCANUM:
+                        rival.battle.hand.draw(
+                            *self.__battle.discard(i, is_force=True))
+                        return None
+        player = self.__battle.player
+        group = self.__battle.group
+        pressure = player.defense(group.receive(damage))
+        group.destroy(resource=rival.resource, detect=self.flash)
+        if pressure:
+            player.flash("damage")
+            self.__accumulate.add_pressure(pressure)
+            for effect in effects:
+                if effect:
+                    new, _, _ = effect
+                    if self.__battle.player.armor.is_prevention(new):
+                        _, _, armor, _ = self.__battle.equip_huds
+                        armor.flash()
+                    elif not self.__battle.group.is_prevention(new):
+                        self.__accumulate.add_effect(effect)
+            __vampire()
+            __rob_card()
+            self.update()
+
+    def forward(self):
+        u"""ターンを進める。
+        """
+        self.__turn = self.__turn+1 & self.__TURN_OVER
+
+    # ---- Skill ----
+    def has_skill(self, skill):
+        u"""スキル判定。
+        """
+        name = _general.get_skill_names(skill)
+        return name in self.__skills.split("#")
+
+    def flash(self, skill):
+        u"""スキル所持対象を光らせる。
+        """
+        name = _general.get_skill_names(skill)
+        if name in self.__base_skills.split("#"):
+            self.__battle.player.flash("skill")
+            return True
+        return self.__battle.flash(skill)
+
+    # ---- Update ----
+    def update(self):
+        u"""カード表示とスキル設定。
+        """
+        self.__puzzle.field.skills = self.__resource.skills = self.__skills
+        self.__battle.hand.update()
+
+    # ---- Getter ----
     def get_parameter(self, is_ai):
         u"""AI用パラメータ取得。
         """
@@ -106,12 +219,13 @@ class System(object):
                 hold = self.__puzzle.hold.virtual
                 parameter.hold = hold.parameter if hold else None
                 parameter.is_hold_captured = self.__puzzle.hold.is_captured
-                parameter.recepters = self.__battle.group.recepters
+                parameter.donors = self.__battle.group.donors
                 parameter.catalyst = (
                     self.__battle.catalyst.number if
                     self.__battle.catalyst else -1)
-                parameter.resorce = self.__resorce
-                parameter.is_sorcery_useable = self.__battle.is_sorcery_useable
+                parameter.resource = self.__resource.copy
+                parameter.is_arcana_available = (
+                    self.__battle.is_arcana_available)
 
         def __set_peice():
             u"""ピース関連パラメータ設定。
@@ -126,10 +240,10 @@ class System(object):
             u"""戦闘関連パラメータ設定。
             """
             parameter.equip_broken_state = sum(
-                1 << i if not item.is_useable else 0 for
+                1 << i if not item.is_available else 0 for
                 i, item in enumerate(self.__battle.player.equip))
-            parameter.hand = self.__battle.hand_by_number
-            parameter.jokers = len(self.__battle.jokers)
+            parameter.hand = self.__battle.hand.by_number
+            parameter.jokers = len(self.__battle.hand.jokers)
             group = self.__battle.group
             parameter.is_full_group = group.is_full
             parameter.is_group_exsit = bool(group)
@@ -142,110 +256,6 @@ class System(object):
         __set_peice()
         __set_battle()
         return parameter
-
-    # ---- Command ----
-    def command_input(self, cmd):
-        u"""コマンド入力。
-        """
-        self.__phase.command_input(cmd)
-
-    def command_run(self, rival):
-        u"""コマンドの処理全般。
-        """
-        while self.__cmds:
-            self.__phase.command_run(self.__cmds[0], rival)
-            self.__cmds = self.__cmds[1:]
-
-    # ---- Process ----
-    def damage_calc(self, rival, damage, effects):
-        u"""ダメージ計算。
-        """
-        def __vampire():
-            u"""スター吸収スキル処理。
-            """
-            import random as __random
-            vampire, _ = _const.VAMPIRE_SKILL.split("#")
-            talisman, _ = _const.TALISMAN_SKILL.split("#")
-            if rival.has_skill(vampire) and not self.has_skill(talisman):
-                targets = tuple(j for j, is_exsit in enumerate(
-                    _const.STAR_ENERGY <= i for i in self.__resorce.stars
-                ) if is_exsit)
-                if targets:
-                    target = __random.choice(targets)
-                    self_stars = list(self.__resorce.stars)
-                    self_stars[target] -= _const.STAR_ENERGY
-                    self.__resorce.stars = self_stars
-                    rival_stars = list(rival.__resorce.stars)
-                    rival_stars[target] += _const.STAR_ENERGY
-                    rival.__resorce.stars = rival_stars
-
-        def __rob_card():
-            u"""カード強奪スキル処理。
-            """
-            name, _ = _const.ROB_CARD_SKILL.split("#")
-            if rival.has_skill(name):
-                for i, card in enumerate(self.__battle.hand):
-                    if card.arcanum.type != _const.JOKER_ARCANUM:
-                        rival.__battle.draw(
-                            *self.__battle.dump(i, is_force=True))
-                        return None
-        player = self.__battle.player
-        group = self.__battle.group
-        pressure = player.defense(group.receive(damage))
-        group.destroy()
-        if pressure:
-            player.flash("damage")
-            self.__accumulate.add_pressure(pressure)
-            for effect in effects:
-                if effect:
-                    new, _, _ = effect
-                    if self.__battle.player.armor.is_prevention(new):
-                        _, _, armor, _ = self.__battle.equip
-                        armor.flash()
-                    elif not self.__battle.group.is_prevention(new):
-                        self.__accumulate.add_effect(effect)
-            __vampire()
-            __rob_card()
-            self.__battle.update()
-
-    def forward(self):
-        u"""ターンを進める。
-        """
-        self.__turn = self.__turn+1 & self.__ROUND
-
-    # ---- Phase ----
-    def completion(self, rival):
-        u"""ラインコンプリート処理。
-        """
-        self.__phase.sub_completion(rival, self.__thinker)
-        self.__phase.completion()
-
-    def release(self, rival):
-        u"""魔術開放処理。
-        """
-        self.__phase.release(rival)
-
-    def throw(self, rival):
-        u"""ブロック投下処理。
-        """
-        self.__phase.throw(rival, self.__thinker)
-
-    def fall(self):
-        u"""ブロック自動落下処理。
-        """
-        self.__phase.fall()
-
-    # ---- Skill ----
-    def has_skill(self, name):
-        u"""指定されたスキル所持数を返す。
-        """
-        skills = self.__skills.split("#")
-        return skills.count(name)
-
-    def update_skills(self):
-        u"""スキル更新処理。
-        """
-        self.__puzzle.field.skills = self.__resorce.skills = self.__skills
 
     # ---- Setter ----
     def set_thinker(self, rival):
@@ -291,8 +301,7 @@ class System(object):
         return: 'skill1#skill2#skill3...'
         """
         skills = tuple(skills for skills in (
-            self.__base_skills, self.__battle.card_skills,
-            self.__battle.creature_skills) if skills)
+            self.__base_skills, self.__battle.skills) if skills)
         return reduce(lambda x, y: x+"#"+y, skills) if skills else ""
 
     # ------ System ------
@@ -321,10 +330,10 @@ class System(object):
         return self.__puzzle
 
     @property
-    def resorce(self):
+    def resource(self):
         u"""リソース取得。
         """
-        return self.__resorce
+        return self.__resource
 
     @property
     def accumulate(self):
@@ -348,10 +357,10 @@ class System(object):
     def turn(self):
         u"""ターン取得。
         """
-        name, _ = _const.SHORT_TURN_SKILL.split("#")
-        return self.__turn << 1 if self.has_skill(name) else self.__turn
+        is_short_trun = self.has_skill(_const.SHORT_TURN_SKILL)
+        return self.__turn << 1 if is_short_trun else self.__turn
 
-    # ------ Detect ------
+    # ------ Detection ------
     @property
     def is_throwing(self):
         u"""通常フェイズ判定。
@@ -377,16 +386,16 @@ class System(object):
         return self.__game_over == -1
 
     @property
-    def is_pauseable(self):
+    def is_pause_available(self):
         u"""一時停止可能状態取得。
         """
-        return self.__is_pauseable
+        return self.__is_pause_available
 
-    @is_pauseable.setter
-    def is_pauseable(self, value):
+    @is_pause_available.setter
+    def is_pause_available(self, value):
         u"""一時停止可能状態設定。
         """
-        self.__is_pauseable = bool(value)
+        self.__is_pause_available = bool(value)
 
     @property
     def is_paused(self):

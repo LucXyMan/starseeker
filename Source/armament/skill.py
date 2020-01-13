@@ -63,20 +63,17 @@ class _Skill(object):
         __levels: このスキルを覚えるのに必要なレベル。
         """
         self.__string = string
-        if _const.NAME_LIMIT < len(self.name):
-            raise ValueError(u"name too long")
         self.__slot = slot
         self.__levels = levels
 
     def __repr__(self):
         u"""文字列表現取得。
         """
-        return (
-            u"<{name}: {category}, number={number}, slot={slot}>").format(
+        return u"<{name}: {category}, number={number}, slot={slot}>".format(
             name=self.name, category=self.category, number=self.number,
             slot=self.slot)
 
-    def get_info(self):
+    def get_notice(self):
         u"""情報の取得。
         """
         return u"{name}/SLOT:{slot}#{desc}{end}".format(
@@ -103,8 +100,7 @@ class _Skill(object):
                 4 if self.category == _SORCERY_CATEGORY else
                 5 if self.category == _STAR_CATEGORY else
                 3 if self.category == _SPECIAL_CATEGORY else
-                8 if self.category == _UNACQUIRED_CATEGORY else
-                2)))
+                8 if self.category == _UNACQUIRED_CATEGORY else 2)))
 
     @property
     def category(self):
@@ -159,13 +155,12 @@ def init():
         _Skill(_BLOCK_CATEGORY+u"#"+_const.STONE_BREAKER_SKILL, 1, 12),
         _Skill(_BLOCK_CATEGORY+u"#"+_const.POWER_STROKE_SKILL, 1, 13),
         _Skill(_BLOCK_CATEGORY+u"#"+_const.EXORCIST_SKILL, 2, 14),
-        _Skill(_BLOCK_CATEGORY+u"#"+_const.PHANTOM_THIEF_SKILL, 6, 32),
+        _Skill(_BLOCK_CATEGORY+u"#"+_const.PHANTOM_THIEF_SKILL, 7, 32),
         _Skill(_BLOCK_CATEGORY+u"#"+_const.WATER_PRESS_SKILL, 6, 31),
         _Skill(_BLOCK_CATEGORY+u"#"+_const.CHOCOLATE_PRESS_SKILL, 5, 30),
         _Skill(_BLOCK_CATEGORY+u"#"+_const.COMPLETE_ASSIST_SKILL, 8, 36),
-        _Skill(_SORCERY_CATEGORY+u"#"+_const.PURIFY_SKILL, 5, 35),
+        _Skill(_SORCERY_CATEGORY+u"#"+_const.PURIFY_SKILL, 4, 35),
         _Skill(_SORCERY_CATEGORY+u"#"+_const.DOUBLE_SPELL_SKILL, 1, 10),
-        _Skill(_SORCERY_CATEGORY+u"#"+_const.VAMPIRE_SKILL, 6, 21),
         _Skill(_SORCERY_CATEGORY+u"#"+_const.ROB_CARD_SKILL, 5, 22),
         _Skill(_SORCERY_CATEGORY+u"#"+_const.SOUL_EAT_SKILL, 7, 33),
         _Skill(_SORCERY_CATEGORY+u"#"+_const.REVERSE_SORCERY_SKILL, 2, 10),
@@ -184,6 +179,8 @@ def init():
         _Skill(_STAR_CATEGORY+u"#"+_const.HALF_MERCURY_SKILL, 3, 27),
         _Skill(_STAR_CATEGORY+u"#"+_const.MOON_CHILD_SKILL, 3, 28),
         _Skill(_STAR_CATEGORY+u"#"+_const.SON_OF_SUN_SKILL, 3, 29),
+        _Skill(_STAR_CATEGORY+u"#"+_const.VAMPIRE_SKILL, 6, 21),
+        _Skill(_STAR_CATEGORY+u"#"+_const.CONVERT_RESOURCE_SKILL, 4, 22),
         _Skill(_SPECIAL_CATEGORY+u"#"+_const.SAFETY_SKILL, 2, 9),
         _Skill(_SPECIAL_CATEGORY+u"#"+_const.TALISMAN_SKILL, 1, 10),
         _Skill(_SPECIAL_CATEGORY+u"#"+_const.SHORT_TURN_SKILL, 5, 32),

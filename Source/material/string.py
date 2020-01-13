@@ -137,7 +137,7 @@ def init():
     ElmCharColor()
 
 
-def get_string(string, size, color=None, shorten=True):
+def get_string(string, size, color=None, is_short=True):
     u"""文字列画像取得。
     """
     import utils.memoize as __memoize
@@ -208,12 +208,12 @@ def get_string(string, size, color=None, shorten=True):
             values.append((img, img.get_size()))
         m = max(h for _, (_, h) in values)
         surf = _pygame.Surface((
-            sum(w for _, (w, _) in values) if shorten else
+            sum(w for _, (w, _) in values) if is_short else
             (size+2)*len(string), m))
         surf.set_colorkey(_pygame.Color("0x000000"))
         x = 0
         for i, (img, (w, h)) in enumerate(values):
-            surf.blit(img, (x if shorten else (size+2)*i, (m-h) >> 1))
+            surf.blit(img, (x if is_short else (size+2)*i, (m-h) >> 1))
             x += w
         return surf
     else:

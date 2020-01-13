@@ -14,7 +14,7 @@ class Equip(object):
     u"""装備データ。
     """
     __slots__ = (
-        "_ability", "__keys", "__image_number", "__levels",  "__sp",
+        "_ability", "__keys", "__image_number", "__seals",  "__sp",
         "__string", "__value")
     _CORRECTION = 1
     __collections = ()
@@ -53,26 +53,23 @@ class Equip(object):
 
     def __init__(
         self, image_number, string, sp, correction,
-        ability=None, keys=(), levels=()
+        ability=None, keys=(), seals=()
     ):
         u"""コンストラクタ。
         __image_number: 画像番号。
         __string: 種類:名前:メイン概要:サブ概要。
         __sp: 必要SP。
         __value: 能力値。
-        __keys: このアイテムを購入するためのアイテム番号。
-        __levels: このアイテムを購入するためにクリアするレベル。
+        __keys: キーアイテム。
+        __seals: 必要フラグ or 必要クリアレベル。
         _ability: 特殊能力。
         """
-        import utils.const as __const
         self.__image_number = image_number
         self.__string = string
-        if __const.NAME_LIMIT < len(self.name):
-            raise ValueError(u"Name too long")
         self.__sp = sp
         self.__value = int(self.__sp*self._CORRECTION*correction)
         self.__keys = keys
-        self.__levels = levels
+        self.__seals = seals
         self._ability = ability if ability else Ability()
 
     def __repr__(self):
@@ -84,30 +81,30 @@ class Equip(object):
 
     # ---- Effect ----
     def get_enchant(self, lv):
-        u"""武器効果を取得。
+        u"""武器効果取得。
         """
         return ()
 
     def get_persistence(self, turn):
-        u"""頭防具効果を取得。
+        u"""頭防具効果取得。
         """
         return ()
 
     def is_prevention(self, target):
-        u"""ブロック変化防止の場合に真。
+        u"""ブロック変化防止判定。
         """
         return False
 
     # ---- Property ----
     @property
-    def info(self):
-        u"""情報の取得。
+    def notice(self):
+        u"""情報取得。
         """
         able, cnsm = (
-            (u"取得", u"消費") if _inventories.SP.is_buyable(self) else
+            (u"取得", u"消費") if _inventories.is_buyable(self) else
             (u"不可", u"必要"))
         require_key = self.rank-sum(
-            1 for key in self.__keys if _inventories.Items.has(key-1))
+            1 for key in self.keys if _inventories.Item.has(key-1))
         has_text = (
             u"{name}/{param}:{value}#{desc}/{sub_desc}#"
             u"決定キーで装備/リムーブキーで解除"
@@ -117,16 +114,16 @@ class Equip(object):
         require = (
             u"キーアイテムがあと{require_key}つ必要".
             format(require_key=require_key))
-        buy = u"#決定キーで購入" if _inventories.SP.is_buyable(self) else u""
-        contents = (
+        buy = u"#決定キーで購入" if _inventories.is_buyable(self) else u""
+        content = (
             u"{category}が入っている/{able}:{sp}SP{cnsm}{buy}".format(
                 category=self.category, able=able, sp=self.sp,
                 cnsm=cnsm, buy=buy))
         not_has_text = (
             u"封印されている" if self.is_sealed else
-            require if require_key else contents)
+            require if require_key else content)
         return (
-            has_text if _inventories.Items.has(self.number-1) else
+            has_text if _inventories.Item.has(self.number-1) else
             not_has_text)
 
     @property
@@ -192,7 +189,7 @@ class Equip(object):
     def keys(self):
         u"""キーアイテム番号取得。
         """
-        return self.__keys
+        return self.get_by_name(*self.__keys)
 
     @property
     def rank(self):
@@ -210,18 +207,45 @@ class Equip(object):
             0 if self.is_weapon else 1 if self.is_head else
             2 if self.is_body else 3 if self.is_accessory else 4)
 
-    # ------ Detect ------
+    # ------ Ability ------
+    @property
+    def spell(self):
+        u"""装飾効果取得。
+        """
+        return ()
+
+    @property
+    def skills(self):
+        u"""スキル取得。
+        """
+        _, skills = self._ability.string.split("###")
+        return skills
+
+    # ------ Detection ------
     @property
     def is_sealed(self):
-        u"""封印状態の場合に真。
+        u"""封印判定。
         """
-        return any(not _inventories.Level.has(seal) for seal in self.__levels)
+        def __is_fulfill(seal):
+            u"""条件判定。
+            """
+            if seal == -1:
+                return not _inventories.General.is_cleared_endless()
+            elif seal == -2:
+                return not _inventories.Item.is_completion()
+            elif seal == -3:
+                return not _inventories.Item.is_crown_completion()
+            elif seal == -4:
+                return not _inventories.Card.is_completion()
+            else:
+                return not _inventories.Level.has(seal)
+        return any(__is_fulfill(seal) for seal in self.__seals)
 
     @property
     def is_locked(self):
         u"""ロックされている場合に真。
         """
-        return any(not _inventories.Items.has(key-1) for key in self.__keys)
+        return any(not _inventories.Item.has(key-1) for key in self.keys)
 
     @property
     def is_weapon(self):
@@ -253,31 +277,36 @@ class Equip(object):
         """
         return False
 
-    # ------ Ability ------
+
+class Armor(Equip):
+    u"""防具データ。
+    """
+    __slots__ = ()
+
     @property
-    def addition(self):
-        u"""パターン変更リクエストを取得。
+    def is_armor(self):
+        u"""防具判定。
         """
-        return ()
+        return True
 
 
 class Ability(object):
     u"""装備能力データ。
     """
-    __slots__ = "__interval", "__is_single", "__target",
+    __slots__ = "__interval", "__is_single", "__string",
 
-    def __init__(self,  target="", interval=0b0, is_single=False):
+    def __init__(self,  string="###", interval=0b0, is_single=False):
         u"""コンストラクタ。
         """
-        self.__target = target
+        self.__string = string
         self.__interval = interval
         self.__is_single = is_single
 
     @property
-    def target(self):
-        u"""ターゲット文字列。
+    def string(self):
+        u"""文字列取得。
         """
-        return self.__target
+        return self.__string
 
     @property
     def interval(self):

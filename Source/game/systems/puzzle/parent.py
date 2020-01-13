@@ -38,6 +38,7 @@ class Parent(object):
         import utils.layouter as __layouter
         import window as __window
 
+        # ---- Array ----
         class __PieceArray(_pieces.Array):
             u"""ピース配列。
             """
@@ -75,7 +76,7 @@ class Parent(object):
             def _reload(self):
                 u"""パターン生成。
                 """
-                self._patterns = _pieces.get_levels(0, self.__level+1)
+                self._patterns = _pieces.get_levels(self.__level+1)
                 _random.shuffle(self._patterns)
 
             @property
@@ -91,6 +92,7 @@ class Parent(object):
                 limit = _pieces.get_total()-1
                 self.__level = int(value if value < limit else limit)
 
+        # ---- String ----
         class _BlockString(__string.String):
             u"""ブロック情報文字列。
             """
@@ -107,7 +109,7 @@ class Parent(object):
             def update(self):
                 u"""文字列の更新。
                 """
-                def __rise_and_fall():
+                def __fluctuate():
                     u"""値の変動。
                     """
                     if self._param < self._dest:
@@ -115,7 +117,7 @@ class Parent(object):
                     elif self._param > self._dest:
                         self._param -= 1
                 self._set_dest()
-                __rise_and_fall()
+                __fluctuate()
                 self.string = self._get_string()
 
         class __LevelString(_BlockString):
@@ -176,9 +178,9 @@ class Parent(object):
         self.__consumed = 0
         self.__luck = 0
         self.__hardness = 0
-        __layouter.Game.set_block_level(tuple(
-            String((0, 0), self) for
-            String in (__LevelString, __HardnessString, __LuckString)))
+        strings = __LevelString, __HardnessString, __LuckString
+        __layouter.Game.set_block_level(
+            String((0, 0), self) for String in strings)
         self.__release = _pieces.Array(length=1)
         self.__release.append(_pieces.Rotatable(
             (1, 1), _const.SINGLE_PRUNING, ()))
@@ -194,7 +196,7 @@ class Parent(object):
         u"""ピースの表示。
         """
         release, = self.__release
-        self.__piece = _pieces.Dropping(release, (0, 0))
+        self.__piece = _pieces.Falling(release, (0, 0))
         self.__window.piece = self.__piece
 
     def eliminate(self):
@@ -252,11 +254,11 @@ class Parent(object):
                     self.__levels.level += 1
                 self.__consumed += 1
 
-        def __feature():
+        def __form():
             u"""パターンの変更全般。
             """
-            def __hardness_change():
-                u"""ブロックの硬度を強化。
+            def __harden():
+                u"""ブロック硬化。
                 """
                 rate = self.__hardness*0.005
                 if _random.random() < rate:
@@ -302,18 +304,20 @@ class Parent(object):
                     __add_chest()
                 elif ticket == self.__item_lot.JOEKER_TICKET:
                     new.append("Joker", "Normal", self.__joker_lot.draw())
-                __hardness_change()
+                __harden()
         __level_up()
         self.__piece.clear()
         new = (
             self.__levels.get() if self.__piece_lot.draw() else
             self.__basics.get())
-        __feature()
-        self.__item_state = any(any(
+        __form()
+        has_item = any(any(
             shape and shape.type in self.__ITEM_NAMES.split("#") for
-            shape in line) for line in new) | any(any(
-                shape and shape.type == "Joker" for
-                shape in line) for line in new) << 1
+            shape in line) for line in new)
+        has_joker = any(any(
+            shape and shape.type == "Joker" for
+            shape in line) for line in new) << 1
+        self.__item_state = has_item | has_joker
         result, = self.__release.append(new)
         self.__display()
         return result

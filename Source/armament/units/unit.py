@@ -14,6 +14,7 @@ class Unit(__pygame.sprite.DirtySprite):
     u"""基本ユニット。
     """
     __POWER_UP_LIMIT = 4
+    __DEFENCE_LIMIT = 95
 
     def __init__(self, pos, data, packet, group=None):
         u"""コンストラクタ。
@@ -31,10 +32,7 @@ class Unit(__pygame.sprite.DirtySprite):
         self._effect = None
         self._is_right = False
         self.__power_ups = []
-        self.image = self.current_image
-        self.rect = self.image.get_rect()
-        self.__dest = self.image.get_rect()
-        self.__dest.topleft = self.rect.topleft = pos
+        self._init_image(pos)
         __huds.Charge(self)
         __shadow.Shadow(self)
         self.update()
@@ -48,20 +46,27 @@ class Unit(__pygame.sprite.DirtySprite):
             type=self.__class__.__name__, name=self._data.name,
             level=self.level, direction="Right" if self._is_right else "Left")
 
+    def _init_image(self, pos):
+        u"""画像初期化。
+        """
+        self.image = self.current_image
+        self.rect = self.image.get_rect()
+
     # ---- Charge ----
-    def _get_power_up_charge(self, score):
+    def _get_enhanced_charge(self, score):
         u"""パワーアップ適用後のチャージ値を取得。
         """
-        return (score+(score >> 2)*self.speed_level)
+        return score+(score >> 2)*self.speed_level
 
-    def _get_score(self, onepieces):
+    def _get_score(self, one_pieces):
         u"""ブロックから得点を取得。
         """
         return sum(
             block.get_score() for
-            block in reduce(lambda a, b: a+b, onepieces))
+            block in reduce(lambda a, b: a+b, one_pieces) if
+            block.is_destroyed)
 
-    def charge(self, onepieces):
+    def charge(self, one_pieces):
         u"""パワーチャージ。
         消去したラインの得点をチャージ。
         """
@@ -73,8 +78,8 @@ class Unit(__pygame.sprite.DirtySprite):
                 3 if 5 <= lines else 2.5 if 4 <= lines else
                 2 if 3 <= lines else 1.5 if 2 <= lines else 1))
         self._power += __strengthen(
-            self._get_power_up_charge(self._get_score(onepieces)),
-            len(onepieces))
+            self._get_enhanced_charge(self._get_score(one_pieces)),
+            len(one_pieces))
 
     def release(self):
         u"""パワーチャージ解放。
@@ -93,9 +98,10 @@ class Unit(__pygame.sprite.DirtySprite):
         """
         if 0 < stroke:
             vit = self._vit
-            _vit = vit+(vit >> 3)*self.defense_level
-            _stroke = int(stroke-stroke*_vit*0.01)
-            return 0 if _stroke < 0 else _stroke
+            vit = vit+(vit >> 3)*self.defense_level
+            vit = vit if vit <= self.__DEFENCE_LIMIT else self.__DEFENCE_LIMIT
+            stroke = int(stroke-stroke*vit*0.01)
+            return 0 if stroke < 0 else stroke
         return 0
 
     # ---- Power Up ----
@@ -205,6 +211,9 @@ class Unit(__pygame.sprite.DirtySprite):
                 not power_up.is_over]
 
     # ---- Update ----
+    def _move(self):
+        u"""移動処理。
+        """
     def _update_finish(self):
         u"""終了時更新。
         """
@@ -222,20 +231,8 @@ class Unit(__pygame.sprite.DirtySprite):
                     self.__animation = None
             else:
                 self.image = self.current_image
-
-        def __move():
-            u"""移動処理。
-            """
-            if self.rect.left < self.__dest.left:
-                self.rect.move_ip((1, 0))
-            elif self.__dest.left < self.rect.left:
-                self.rect.move_ip((-1, 0))
-            if self.rect.top < self.__dest.top:
-                self.rect.move_ip((0, 1))
-            elif self.__dest.top < self.rect.top:
-                self.rect.move_ip((0, -1))
         __update_image()
-        __move()
+        self._move()
 
     def flash(self, type_=""):
         u"""フラッシュ開始。
@@ -281,12 +278,6 @@ class Unit(__pygame.sprite.DirtySprite):
         """
         self._is_right = bool(value)
         self.image = self.current_image
-
-    @property
-    def dest(self):
-        u"""スプライトの移動先rectを取得。
-        """
-        return self.__dest
 
     @property
     def layer_of_sprite(self):

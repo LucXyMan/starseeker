@@ -7,7 +7,6 @@ This software is released under BSD license.
 
 ブロックモジュール。
 """
-import random as _random
 import pygame as _pygame
 import cell as __cell
 import material.block as _block
@@ -15,6 +14,16 @@ import utils.const as _const
 import utils.counter as _counter
 import utils.image as _image
 import utils.memoize as _memoize
+
+
+def _get_key(function, *args, **_kw):
+    u"""ブロック画像キー取得。
+    """
+    block, = args
+    return u"<{method}##{name}##{size}>".format(
+        method=u"{module}.{name}".format(
+            module=function.__module__, name=function.__name__),
+        name=block.name, size=block.point.size)
 
 
 class Block(__cell.Cell):
@@ -80,28 +89,17 @@ class Block(__cell.Cell):
         u"""コンストラクタ。
         """
         super(Block, self).__init__(point, state, is_virtual)
-        self.__is_x_moving = False
-        self.__is_y_moving = False
-        self.__animation = None
-        self.__window = None
+        self.__is_x_moving = self.__is_y_moving = False
+        self.__animation = self.__window = None
         if not self._is_virtual:
             self.update()
-
-    def __repr__(self):
-        u"""文字列表現取得。
-        """
-        return (
-            u"<type: {name}, size: {point}, state: {state}, frame: {frame}>"
-        ).format(
-            name=self.__class__.__name__, point=self._point.size,
-            state=self._state, frame=self.__frame)
 
     # ---- Effect ----
     def _affect(self, target, direction):
         u"""周囲への影響。
         """
-        new, old = target.split("##")
         result = False
+        new, old = target.split("##")
         for cell in self._get_around(direction):
             if cell.is_target(old) and cell.change(new):
                 result = True
@@ -194,7 +192,7 @@ class Block(__cell.Cell):
             if hasattr(self, "image"):
                 self.image.fill(_pygame.Color("0x000000"))
                 self.image.blit(self._current_image, (0, 0))
-            elif not self._is_virtual:
+            else:
                 self.image = _image.copy(self._current_image)
 
         def __update_edge():
@@ -205,8 +203,8 @@ class Block(__cell.Cell):
                 for x, grid in enumerate(line):
                     if grid:
                         images = _block.get(color+"_"+self.__EDGE_NAMES[grid])
-                        self.image.blit(images[_counter.get_frame(4)], (
-                            x << _const.GRID_SHIFT, y << _const.GRID_SHIFT))
+                        dest = x << _const.GRID_SHIFT, y << _const.GRID_SHIFT
+                        self.image.blit(images[_counter.get_frame(4)], dest)
 
         def __update_rect():
             u"""rect更新。
@@ -222,36 +220,18 @@ class Block(__cell.Cell):
         def __move():
             u"""移動処理。
             """
-            if hasattr(self, "rect"):
-                if self.is_x_moving:
-                    distance = abs(
-                        self.rect.x-(self._point.x << _const.GRID_SHIFT))
-                    step = self.__STEP if self.__STEP < distance else distance
-                    step = (
-                        _random.randint(1, step) if
-                        _const.IS_BLOCK_RANDOM_STEP else step)
-                    self.rect.move_ip(
-                        step if
-                        self.rect.x < self._point.x << _const.GRID_SHIFT else
-                        -step, 0)
-                if self.is_y_moving:
-                    distance = abs(
-                        self.rect.y-(self._point.y << _const.GRID_SHIFT))
-                    step = self.__STEP if self.__STEP < distance else distance
-                    step = (
-                        _random.randint(1, step) if
-                        _const.IS_BLOCK_RANDOM_STEP else step)
-                    self.rect.move_ip(
-                        0, step if
-                        self.rect.y < self._point.y << _const.GRID_SHIFT else
-                        -step)
-        if self.__animation:
-            __flash()
-        elif not self._is_virtual:
-            __update_image()
-        __update_edge()
-        __update_rect()
-        __move()
+            if self.rect and self.is_moving:
+                self.rect.move_ip(
+                    0, self.__STEP if self.rect.y < self._point.y <<
+                    _const.GRID_SHIFT else -self.__STEP)
+        if not self._is_virtual:
+            if self.__animation:
+                __flash()
+            else:
+                __update_image()
+            __update_edge()
+            __update_rect()
+            __move()
 
     def disappear(self, delay=0):
         u"""消失処理。
@@ -261,25 +241,22 @@ class Block(__cell.Cell):
         def __flash_generator(delay):
             u"""フラッシュ画像ジェネレータ。
             """
-            @_memoize.memoize()
-            def __get_colored_image(self, color):
-                u"""色付き画像取得。
-                """
-                return _image.get_colored_add(self._current_image, color)
+            import random as __random
             for _ in range(delay*(self.__FLASH_PERIOD >> 1)):
                 yield self._current_image
             for i in range(self.__FLASH_PERIOD):
                 if self._is_effect_available:
                     effect = __effects.Image((
                         self.rect.centerx +
-                        _random.randint(-_const.GRID >> 1, _const.GRID >> 1),
+                        __random.randint(-_const.GRID >> 1, _const.GRID >> 1),
                         self.rect.centery +
-                        _random.randint(-_const.GRID >> 1, _const.GRID >> 1)),
+                        __random.randint(-_const.GRID >> 1, _const.GRID >> 1)),
                         self._EFFECT, vector=(0, -1), groups=() if
                         self.__window else None)
                     if self.__window:
                         self.__window.effects.append(effect)
-                yield __get_colored_image(self, _const.RAINBOW[i & 0b111])
+                yield _image.get_colored_add(
+                    self._current_image, _const.RAINBOW[i & 0b111])
         if self._is_destroyed:
             self.__animation = __flash_generator(delay)
 
@@ -322,15 +299,7 @@ class Block(__cell.Cell):
 
     # ---- Property ----
     @property
-    def __frame(self):
-        u"""画像フレーム取得。
-        """
-        return (
-            0 if not hasattr(self, "_FRAME_NUM") else
-            _counter.get_frame(self._FRAME_NUM))
-
-    @property
-    @_memoize.memoize()
+    @_memoize.memoize(get_key=_get_key)
     def _scaled_images(self):
         u"""サイズ調整後画像取得。
         """
@@ -342,7 +311,8 @@ class Block(__cell.Cell):
     def _current_image(self):
         u"""現在画像取得。
         """
-        return self._scaled_images[self.__frame]
+        return self._scaled_images[
+            _counter.get_frame(self._FRAME) if hasattr(self, "_FRAME") else 0]
 
     @property
     def _is_effect_available(self):
@@ -382,22 +352,10 @@ class Block(__cell.Cell):
         return True
 
     @property
-    def is_x_moving(self):
-        u"""x軸移動判定。
-        """
-        return self.rect.x != self._point.x << _const.GRID_SHIFT
-
-    @property
-    def is_y_moving(self):
-        u"""y軸移動判定。
-        """
-        return self.rect.y != self._point.y << _const.GRID_SHIFT
-
-    @property
     def is_moving(self):
         u"""移動判定。
         """
-        return self.is_x_moving or self.is_y_moving
+        return self.rect.y != self._point.y << _const.GRID_SHIFT
 
     @property
     def is_disappear(self):

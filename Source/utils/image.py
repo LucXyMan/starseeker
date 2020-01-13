@@ -92,11 +92,11 @@ class BackGround(object):
 __ALTITUDE = 16
 
 
-def segment(source, division, grid=(16, 16), adjust=(0, 0)):
-    u"""画像分割処理。
+def get_segment(source, division, grid=(16, 16), offset=(0, 0)):
+    u"""分割画像取得。
     """
     def __split(source, rect):
-        u"""画像の切り取り処理。
+        u"""画像切り取り処理。
         """
         surf = _pygame.Surface(
             rect.size, 0, source.get_bitsize(), source.get_masks())
@@ -105,7 +105,7 @@ def segment(source, division, grid=(16, 16), adjust=(0, 0)):
         surf.blit(source, (0, 0), rect)
         return surf
     return tuple(__split(source, _pygame.Rect(
-        grid[0]*x+adjust[0], grid[1]*y+adjust[1], grid[0], grid[1]
+        grid[0]*x+offset[0], grid[1]*y+offset[1], grid[0], grid[1]
     )) for y in range(division[1]) for x in range(division[0]))
 
 

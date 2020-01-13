@@ -89,7 +89,7 @@ class _Controler(object):
     """
     __slots__ = (
         "_added", "__buttons", "__keyboard", "__id", "__interval",
-        "__is_init_error", "__is_input_error", "__is_keyboard_useable",
+        "__is_init_error", "__is_input_error", "__is_keyboard_available",
         "_joystick", "__presseds", "__pressure", "__queue", "__speed")
     _DECISION = "DECISION"
     _CANCEL = "CANCEL"
@@ -207,17 +207,17 @@ class _Controler(object):
         self.__presseds = ""
         self.__keyboard = {}
         self.__buttons = {}
-        self.__speed = __inventories.Utils.get_speed()+1
+        self.__speed = __inventories.General.get_speed()+1
         self.__interval = _const.FRAME_RATE >> 1
         self.__pressure = 0
-        self.__is_keyboard_useable = True
+        self.__is_keyboard_available = True
         if _joystick.get_count():
             self._joystick = _joystick.Joystick(self.__id)
             try:
                 self._joystick.init()
                 self.__is_init_error = False
             except _pygame.error:
-                _sprites.Info.send(
+                _sprites.Notice.notify(
                     "CONTROLER INITIALIZE ERROR", is_warning=True)
                 self.__is_init_error = True
         __set_keys()
@@ -237,7 +237,7 @@ class _Controler(object):
         u"""キーが押されている場合に真。
         """
         return (
-            self.__is_keyboard_useable and
+            self.__is_keyboard_available and
             any(pressed[key] for key in self.__keyboard[keys]))
 
     def input(self):
@@ -288,7 +288,7 @@ class _Controler(object):
                 except _pygame.error:
                     if not self.__is_input_error:
                         self.__is_input_error = True
-                        _sprites.Info.send(
+                        _sprites.Notice.notify(
                             "CONTROLER INPUT ERROR", is_warning=True)
 
         def __volume_input():
@@ -348,16 +348,16 @@ class _Controler(object):
             return ""
 
     @property
-    def is_keyboard_useable(self):
+    def is_keyboard_available(self):
         u"""キーボード使用可能状態取得。
         """
-        return self.__is_keyboard_useable
+        return self.__is_keyboard_available
 
-    @is_keyboard_useable.setter
-    def is_keyboard_useable(self, value):
+    @is_keyboard_available.setter
+    def is_keyboard_available(self, value):
         u"""キーボード使用可能状態設定。
         """
-        self.__is_keyboard_useable = value
+        self.__is_keyboard_available = value
 
     @property
     def is_init_error(self):

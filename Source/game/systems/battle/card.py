@@ -7,14 +7,15 @@ This software is released under BSD license.
 
 カードスプライトモジュール。
 """
-import pygame as __pygame
 import material.icon as _icon
 import material.string as _string
 import utils.const as _const
+import sprites as __sprites
 
 
-class Card(__pygame.sprite.DirtySprite):
-    u"""カードスプライト。
+# ---- Simple Card ----
+class Card(__sprites.huds.HUD):
+    u"""アルカナカード。
     """
     __STEP = 4
     __FLASH_PERIOD = 16
@@ -23,7 +24,7 @@ class Card(__pygame.sprite.DirtySprite):
         ("red_fire",)*(__FLASH_PERIOD >> 2) +
         ("white_fire",)*(__FLASH_PERIOD >> 3) +
         ("black_fire",)*(__FLASH_PERIOD >> 3))
-    __FRAMES = _const.FRAME_DELAY << 2
+    __FRAME = _const.FRAME_DELAY << 2
     __vectors = ()
     _images = ()
 
@@ -40,29 +41,25 @@ class Card(__pygame.sprite.DirtySprite):
                 _icon.get(2+i << 8 | color),)*_const.FRAME_DELAY for
                 i in range(4)))+sub_image
 
-    def __init__(self, system, arcanum, groups=None):
+    def __init__(self, hand, arcanum, groups=None):
         u"""コンストラクタ。
         """
         def __init_generator(image):
             u"""出現時画像ジェネレータ。
             """
-            import material.block as __block
             for i in range(self.__FLASH_PERIOD << 1):
-                dummy, = __block.get("dummy")
-                yield image if i & 0b11 == 0 else dummy
-        super(Card, self).__init__(
-            (self.group, self.draw_group) if groups is None else ())
+                yield image if i & 0b11 == 0 else _icon.get(0x000)
+        super(Card, self).__init__(groups)
         self._init_images()
         self.image = self._images[0]
-        self._system = system
-        self._arcanum = arcanum
-        self._cost = -1
-        self._star = -1
+        self.__animation = __init_generator(self.image)
         self.__frame = 0
-        self._is_front = isinstance(self, (Support, Shield))
+        self.__hand = hand
+        self._arcanum = arcanum
+        self._available_state = 0x001
+        self._is_available = isinstance(self, (Support, Shield))
         self._is_colored = False
         self.__is_burning = False
-        self.__animation = __init_generator(self.image)
         self.rect = self.image.get_rect()
         self.__dest = self.rect.copy()
         self.update()
@@ -71,32 +68,26 @@ class Card(__pygame.sprite.DirtySprite):
         u"""文字列表現取得。
         """
         return (
-            u"<name: {name}, is_useable: {is_useable}, "
-            u"is_colored: {is_colored}>").format(
-                name=self.__class__.__name__, is_useable=self.__is_useable,
-                is_colored=self._is_colored)
+            u"<name: {name}, is_front: {is_front}, is_colored: {is_colored}>"
+        ).format(
+            name=self.__class__.__name__, is_front=self.__is_front,
+            is_colored=self._is_colored)
 
     # ---- Update ----
     def _update_subscript(self):
-        u"""添字の更新処理。
+        u"""添字更新。
         """
-        self.image = _string.get_subscript(
-            self.image, str(self._arcanum.rank),
-            _string.CharColor() if self._arcanum.rank == 0 else
-            _string.ElmCharColor.get(self._star, 1 < self._cost))
+        self.image = _string.get_subscript(self.image, "")
 
     def update(self):
-        u"""画像の更新。
+        u"""画像更新。
         召喚使用可能の場合は表、代替召喚使用可能の場合色違い、
         使用不能の場合は裏の画像で表示される。
         """
         def __move():
             u"""移動処理。
             """
-            if hasattr(self, "rect") and not any(
-                self._system.id == sprite._system.id and
-                sprite.__is_burning for sprite in self.group
-            ):
+            if not self.__hand.is_remaining:
                 dest_x, dest_y = self.__dest.topleft
                 if self.rect.x != dest_x:
                     self.rect.move_ip(
@@ -115,18 +106,18 @@ class Card(__pygame.sprite.DirtySprite):
                 else:
                     self.__animation = None
         else:
-            if self.__is_useable and self.__frame < self.__FRAMES-1:
+            if self.__is_front and self.__frame < self.__FRAME-1:
                 self.__frame += 1
             elif 0 < self.__frame:
                 self.__frame -= 1
             self.image = self._images[
-                self.__frame+(self.__FRAMES if self._is_colored else 0)]
+                self.__frame+(self.__FRAME if self._is_colored else 0)]
         self._update_subscript()
         self.__dest.size = self.rect.size = self.image.get_size()
         __move()
 
     def burn(self):
-        u"""カードの消失処理を設定。
+        u"""カードを燃やす。
         """
         self.flash()
         self.__is_burning = True
@@ -166,16 +157,10 @@ class Card(__pygame.sprite.DirtySprite):
         self.__animation = __generator()
 
     # ---- Setter ----
-    def set_available(self):
-        u"""コスト番号とエレメンタル種類を設定。
+    def set_state(self, system):
+        u"""状態設定。
         """
     # ---- Property ----
-    @property
-    def __is_useable(self):
-        u"""使用可能状態で真。
-        """
-        return self._cost and self._is_front
-
     @property
     def arcanum(self):
         u"""カード内容取得。
@@ -188,56 +173,22 @@ class Card(__pygame.sprite.DirtySprite):
         """
         return self.__dest
 
+    # ---- Detection ----
+    @property
+    def __is_front(self):
+        u"""表表示判定。
+        """
+        order = self._available_state & 0x00F
+        return 0 < order and self._is_available
+
     @property
     def is_moving(self):
-        u"""移動状態で真。
+        u"""移動状態判定。
         """
         return self.rect != self.__dest
 
 
-class Summon(Card):
-    u"""サモンカード。
-    """
-    _COLORS = 1, 6
-
-    def set_available(self):
-        u"""コスト番号とエレメンタル種類を設定。
-        """
-        battle = self._system.battle
-        self._cost, self._star = (
-            self._system.resorce.get_available(self._arcanum))
-        self._is_colored = bool(battle.group.adapt(self._arcanum))
-        self._is_front = battle.is_sorcery_useable and (
-            not battle.group.is_full or self._is_colored)
-
-
-class Sorcery(Card):
-    u"""ソーサリーカード。
-    """
-    _COLORS = 5, 9
-
-    def set_available(self):
-        u"""コスト番号とエレメンタル種類を設定。
-        """
-        battle = self._system.battle
-        self._cost, self._star = (
-            self._system.resorce.get_available(self._arcanum))
-        self._is_front = battle.is_sorcery_useable
-        self._is_colored = (
-            battle.catalyst and
-            self._arcanum.adapt(battle.catalyst))
-
-
-class __Simple(Card):
-    u"""色変化しないカード。
-    """
-    def _update_subscript(self):
-        u"""添字の更新処理。
-        """
-        self.image = _string.get_subscript(self.image, "")
-
-
-class Support(__Simple):
+class Support(Card):
     u"""サポートカード。
     """
     _COLORS = 7, -1
@@ -249,18 +200,68 @@ class Support(__Simple):
             self.image, self._arcanum.subscript)
 
 
-class Shield(__Simple):
+class Shield(Card):
     u"""シールドカード。
     """
     _COLORS = 3, -1
 
 
-class Joker(__Simple):
+class Joker(Card):
     u"""ジョーカーカード。
     """
     _COLORS = 8, -1
 
-    def set_available(self):
-        u"""コスト番号とエレメンタル種類を設定。
+    def set_state(self, system):
+        u"""状態設定。
         """
-        self._is_front = self._system.battle.is_sorcery_useable
+        self._is_available = system.battle.is_arcana_available
+
+
+# ---- Changeable Card ----
+class __Changeable(Card):
+    u"""色変化カード。
+    """
+    def _update_subscript(self):
+        u"""添字更新。
+        """
+        order = self._available_state & 0x00F
+        star = (self._available_state & 0x0F0) >> 4
+        division = (self._available_state & 0xF00) >> 8
+        is_sub = 1 < order
+        rank = self._arcanum.rank
+        rank = rank >> division
+        self.image = _string.get_subscript(
+            self.image, str(rank+1 if is_sub else rank),
+            _string.ElmCharColor.get(star, is_sub))
+
+
+class Summon(__Changeable):
+    u"""サモンカード。
+    """
+    _COLORS = 1, 6
+
+    def set_state(self, system):
+        u"""状態設定。
+        """
+        group = system.battle.group
+        self._available_state = (
+            system.resource.get_available_state(self._arcanum))
+        self._is_colored = bool(group.adapt(self._arcanum))
+        is_fulfill = not group.is_full or self._is_colored
+        self._is_available = system.battle.is_arcana_available and is_fulfill
+
+
+class Sorcery(__Changeable):
+    u"""ソーサリーカード。
+    """
+    _COLORS = 5, 9
+
+    def set_state(self, system):
+        u"""状態設定。
+        """
+        self._available_state = (
+            system.resource.get_available_state(self._arcanum))
+        self._is_available = system.battle.is_arcana_available
+        self._is_colored = (
+            system.battle.catalyst and
+            self._arcanum.adapt(system.battle.catalyst))

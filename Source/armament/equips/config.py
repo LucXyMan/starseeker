@@ -12,13 +12,15 @@ This software is released under BSD license.
 def init():
     u"""アイテムコレクション作成。
     """
-    import armor as __armor
+    import accessory as __accessory
+    import body as __body
     import equip as __equip
+    import head as __head
     import utils.const as __const
     import weapon as __weapon
-    __equip.Equip.set_collections((
-        __equip.Equip(0x000, u"空#装備なし#何もない#", 0, 0),) +
-        __weapon.get()+__armor.get())
+    __equip.Equip.set_collections(
+        (__equip.Equip(0x000, u"空#装備なし#何もない#", 0, 0),) +
+        __weapon.get()+__head.get()+__body.get()+__accessory.get())
     if __const.IS_OUTPUT:
         for i, equip in enumerate(__equip.Equip.get_collections()):
             print i, u":",  unicode(equip)

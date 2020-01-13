@@ -24,15 +24,14 @@ class _Minimap(__hud.HUD):
         self.image = _pygame.Surface(rect.size)
         self.image.set_colorkey(_pygame.Color("0x000000"))
         self.rect = rect
-        self._decorate = 1, 1, 1, 1
         __decorator.set_decorator(self)
         self.update()
 
     @property
-    def decorate(self):
+    def decoration(self):
         u"""デコレータ状態取得。
         """
-        return self._decorate
+        return 0b1111
 
     @property
     def is_light(self):

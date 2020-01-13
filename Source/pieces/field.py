@@ -8,10 +8,10 @@ This software is released under BSD license.
 フィールドモジュール。
 """
 import random as _random
-import utils.const as _const
 import cells as _cells
 import pattern as _pattern
 import piece as __piece
+import utils.const as _const
 
 
 class Field(__piece.Piece):
@@ -40,7 +40,7 @@ class Field(__piece.Piece):
         """
         return u"<{name}>".format(name=self.__class__.__name__)
 
-    # ---- Add and Remove ----
+    # ---- Addition and Remove ----
     def add(self, *blocks):
         u"""ブロック追加。
         """
@@ -56,7 +56,7 @@ class Field(__piece.Piece):
         self._blocks = [block for block in self._blocks if block not in blocks]
 
     # ---- Completion ----
-    def __calc(self, one_pieces, resorce=None):
+    def __calculate(self, one_pieces, resource=None, detect=None):
         u"""コンプリート計算処理。
         """
         def __crack():
@@ -65,21 +65,15 @@ class Field(__piece.Piece):
             def __get_flag():
                 u"""クラックフラグ取得。
                 """
-                def __get_name(skill):
-                    u"""スキル名取得。
-                    """
-                    name, _ = skill.split("#")
-                    return name
                 flag = 0b0
                 if all(
                     block.is_invincible or block.is_blank for
                     block in one_piece
                 ):
                     flag |= _const.FORCE_CRACK
-                name = __get_name(_const.PHANTOM_THIEF_SKILL)
                 if any(
                     block.is_key for block in one_piece
-                ) or name in skills:
+                ) or self.__has_skill(_const.PHANTOM_THIEF_SKILL):
                     flag |= _const.UNLOCK_CRACK
                 if any(
                     block.is_locked and not block.is_opened for
@@ -93,12 +87,11 @@ class Field(__piece.Piece):
                     (_const.STONE_BREAKER_SKILL,  _const.STONE_BREAKER_CRACK),
                     (_const.POWER_STROKE_SKILL, _const.POWER_CRACK),
                     (_const.EXORCIST_SKILL, _const.EXORCIST_CRACK)) if
-                    __get_name(skill) in skills)
+                    self.__has_skill(skill))
                 return flag
-            skills = self.__skills.split("#")
             for one_piece in one_pieces:
-                if resorce:
-                    resorce.extract(one_piece)
+                if resource:
+                    resource.extract(one_piece, detect=detect)
                 flag = __get_flag()
                 for cell in one_piece:
                     cell.crack(flag)
@@ -107,9 +100,9 @@ class Field(__piece.Piece):
                     block.crack()
         __crack()
         for block in self.__table.root:
-            block.move_calc()
+            block.calculate()
 
-    def completion(self):
+    def complete(self):
         u"""補完処理。
         一度目のループ処理でブロック消去。
         二度目のループでドロップダウン。
@@ -119,18 +112,7 @@ class Field(__piece.Piece):
         for block in self.__table.sorted:
             block.drop_down()
 
-    def simple_completion(self):
-        u"""AI用の補完処理関数。
-        """
-        self.__set_state()
-        one_pieces = self.__one_pieces
-        if one_pieces:
-            self.__calc(one_pieces)
-            self.completion()
-            return one_pieces+self.simple_completion()
-        return one_pieces
-
-    def sub_completion(self, resorce):
+    def sub_complete(self, resource, detect=None):
         u"""副次的な補完処理。
         """
         import material.sound as __sound
@@ -139,12 +121,21 @@ class Field(__piece.Piece):
         if one_pieces:
             deleted = len(one_pieces)
             __sound.SE.play("complete_"+(
-                "3" if 4 <= deleted else
-                "2" if 2 <= deleted else
-                "1"))
-            self.__calc(one_pieces, resorce=resorce)
+                "3" if 4 <= deleted else "2" if 2 <= deleted else "1"))
+            self.__calculate(one_pieces, resource=resource, detect=detect)
             for block in self._blocks:
                 block.disappear()
+        return one_pieces
+
+    def simple_complete(self):
+        u"""AI用の補完処理。
+        """
+        self.__set_state()
+        one_pieces = self.__one_pieces
+        if one_pieces:
+            self.__calculate(one_pieces)
+            self.complete()
+            return one_pieces+self.simple_complete()
         return one_pieces
 
     # ---- Process ----
@@ -153,67 +144,59 @@ class Field(__piece.Piece):
         """
         x, y = point
         return (
-            self.__table.get_cell((x, y)),
-            self.__table.get_cell((x+1, y)),
-            self.__table.get_cell((x, y+1)),
-            self.__table.get_cell((x+1, y+1)))
+            self.__table.get_cell((x, y)), self.__table.get_cell((x+1, y)),
+            self.__table.get_cell((x, y+1)), self.__table.get_cell((x+1, y+1)))
 
-    def press(self, pressure, level):
+    def press(self, pressure, level, detect=None):
         u"""フィールド下方にブロック列を生成する。
         """
-        import operate as __operate
+        import falling as __falling
 
         def __get_dug():
             u"""穴空きパターン取得。
             """
-            def __get_name(skill):
-                u"""スキル名取得。
+            def __get_shape():
+                u"""プレスブロックの形を取得。
                 """
-                name, _ = skill.split("#")
-                return name
-
-            def __get_block():
-                u"""基本プレスブロック取得。
-                """
-                for block, skill in (
-                    ("Water", _const.WATER_PRESS_SKILL),
-                    ("Chocolate", _const.CHOCOLATE_PRESS_SKILL)
-                ):
-                    if __get_name(skill) in skills:
-                        return block
-                return "Normal"
-            normal, solid, adamant = ((name, 0, (1, 1)) for name in (
-                __get_block(), "Solid", "Adamant"))
-            type_ = (
-                adamant if level == _const.ADAMANT_PRESS_LEVEL >> 1 else
-                solid if level == _const.SOLID_PRESS_LEVEL >> 1 else
-                normal)
-            shapes = [((x, 0), type_) for x in range(self.width)]
-            is_complete_assist = (
-                __get_name(_const.COMPLETE_ASSIST_SKILL) in skills)
-            width = len(shapes)-(1 if is_complete_assist else 0)
+                def __get_block():
+                    u"""基本プレスブロック取得。
+                    """
+                    has_skill = self.__has_skill if detect is None else detect
+                    for block, skill in (
+                        ("Water", _const.WATER_PRESS_SKILL),
+                        ("Chocolate", _const.CHOCOLATE_PRESS_SKILL)
+                    ):
+                        if has_skill(skill):
+                            return block
+                    return "Normal"
+                if level == _const.ADAMANT_PRESS_LEVEL >> 1:
+                    return "Adamant", 0, (1, 1)
+                elif level == _const.SOLID_PRESS_LEVEL >> 1:
+                    return "Solid", 0, (1, 1)
+                else:
+                    return __get_block(), 0, (1, 1)
+            shape = __get_shape()
+            shapes = [((x, 0), shape) for x in range(self.width)]
+            has_ca = self.__has_skill(_const.COMPLETE_ASSIST_SKILL)
+            width = len(shapes)-(1 if has_ca else 0)
             if self.__dug == -1:
                 self.__dug = _random.randint(0, width)
             self.__dug = _random.choice(
-                range(self.__dug) +
-                range(self.__dug+1, width))
-            return (
-                shapes[:self.__dug] +
-                shapes[self.__dug+(2 if is_complete_assist else 1):])
+                range(self.__dug)+range(self.__dug+1, width))
+            return shapes[:self.__dug]+shapes[self.__dug+(2 if has_ca else 1):]
 
-        def __shift():
+        def __push_up():
             u"""ブロック押上。
             """
             for block in self._blocks:
-                block.shift(_const.UP)
+                block.push_up()
             self._blocks = [
                 block for
                 block in self._blocks if 0 <= block.point.top]
-        skills = self.__skills.split("#")
         pattern = _pattern.Pattern((self.width, 1), __get_dug())
         for _ in range(pressure):
-            __shift()
-            __operate.Dropping(pattern, (0, self.height-1)).stamp(self)
+            __push_up()
+            __falling.Falling(pattern, (0, self.height-1)).stamp(self)
         self.__set_state()
 
     def replace(self, parameter, target):
@@ -234,14 +217,14 @@ class Field(__piece.Piece):
                             start, end if end < limit else limit))
                 for block in blocks:
                     block.change(new)
-                    block.generation(_cells.get)
+                    block.turn(_cells.get)
                     changed = True
         return changed
 
-    def hardening(self, turn):
+    def harden(self):
         u"""ブロック硬質化処理。
         """
-        def __growth():
+        def __grow():
             u"""基本ブロック巨大化。
             """
             def __replace():
@@ -282,7 +265,7 @@ class Field(__piece.Piece):
                 if cell.is_target(old) and cell.is_changeable:
                     color = cell.color >> 1 if new == "Solid" else cell.color
                     if cell.change(new, color << 4 | cell.hp << 1):
-                        cell.generation(_cells.get)
+                        cell.turn(_cells.get)
                         is_changed = True
                 return is_changed
             is_changed = False
@@ -294,7 +277,7 @@ class Field(__piece.Piece):
             return is_changed
         names = _const.BASIC_NAMES.split("#")
         is_rank_upped = __rank_up()
-        is_grown = __growth()
+        is_grown = __grow()
         if is_grown or is_rank_upped:
             self.__set_state()
             return True
@@ -325,7 +308,7 @@ class Field(__piece.Piece):
     def turn(self):
         u"""ターン処理。
         """
-        def __matango_growth():
+        def __grow_matango():
             u"""キノコ成長処理。
             """
             for x in range(self.width-1):
@@ -338,12 +321,19 @@ class Field(__piece.Piece):
         for cell in self.__table.sorted:
             cell.effect()
         for cell in self.__table.sorted:
-            cell.generation(_cells.get)
-        __matango_growth()
+            cell.turn(_cells.get)
+        __grow_matango()
         self.__set_state()
         self.__is_super_drop = False
 
-    # ---- Detect ---
+    # ---- Detection ---
+    def __has_skill(self, skill):
+        u"""スキル判定。
+        """
+        import utils.general as __general
+        name = __general.get_skill_names(skill)
+        return name in self.__skills.split("#")
+
     def is_collide(self, piece):
         u"""piece衝突判定。
         """
@@ -395,10 +385,8 @@ class Field(__piece.Piece):
     def __one_pieces(self):
         u"""コンプリートライン取得。
         """
-        name, _ = _const.COMPLETE_ASSIST_SKILL.split("#")
-        length = (
-            self.width-1 if name in self.__skills.split("#") else
-            self.width)
+        has_ca = self.__has_skill(_const.COMPLETE_ASSIST_SKILL)
+        length = self.width-1 if has_ca else self.width
         return self.__table.get_onepieces(length)
 
     @property
@@ -454,7 +442,7 @@ class Field(__piece.Piece):
         """
         return self.__highest
 
-    # ------ Detect ------
+    # ------ Detection ------
     @property
     def is_moving(self):
         u"""ブロック移動判定。

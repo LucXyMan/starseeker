@@ -25,7 +25,7 @@ def __reverse(byte):
     return eval("'\\x"+hex(ord(byte) ^ 0xFF).lstrip("0x").zfill(2)+"'")
 
 
-def __caesar(byte, is_left):
+def __shift(byte, is_left):
     u"""オクテットをシフト。
     """
     value = ord(byte)
@@ -35,7 +35,7 @@ def __caesar(byte, is_left):
 
 
 # ---- Encode ----
-def __integration(directory, extensions, is_fast=False):
+def __integrate(directory, extensions, is_fast=False):
     u"""ファイルを暗号化して統合。
     暗号化ファイル: ファイル数(65535個まで)+メタデータ1+メタデータ2...+統合データ。
     メタデータ: ファイルサイズ(4Gまで)+名前サイズ(255文字まで)+名前文字列。
@@ -59,7 +59,7 @@ def __integration(directory, extensions, is_fast=False):
         with _io.open(filepath, "rb") as infile:
             body += infile.read()
     if is_fast:
-        pack_fast(directory+(".enf"), meta+body)
+        fast_pack(directory+(".enf"), meta+body)
     else:
         pack(directory+(".enc"), meta+body)
 
@@ -72,14 +72,14 @@ def pack(filename, bytes_):
         """
         result = ""
         for byte in bytes_:
-            result += __caesar(__reverse(byte), True)
+            result += __shift(__reverse(byte), True)
         return result
     with _io.open(filename, "wb") as outfile:
         func = __zlib.compress if __IS_COMPRESSION else lambda x: x
         outfile.write(__encode(func(bytes_)))
 
 
-def pack_fast(filename, bytes_):
+def fast_pack(filename, bytes_):
     u"""ファイルを個別に暗号化。
     比較的早い、単純なもの。
     """
@@ -106,7 +106,7 @@ def unpack(filename):
             """
             result = ""
             for byte in bytes_:
-                result += __reverse(__caesar(byte, False))
+                result += __reverse(__shift(byte, False))
             return result
         with _io.open(name, "rb") as encrypted:
             func = __zlib.decompress if __IS_COMPRESSION else lambda x: x
@@ -120,7 +120,7 @@ def unpack(filename):
         return None
 
 
-def unpack_fast(filename):
+def fast_unpack(filename):
     u"""暗号化ファイル復号化。
     比較的早い、単純なもの。
     """
@@ -161,7 +161,7 @@ class Container(object):
         metadata_bytes_number = 5
         _, ext = _os.path.splitext(filename)
         decrypted = (
-            unpack_fast if ext.upper() == ".ENF" else unpack)(filename)
+            fast_unpack if ext.upper() == ".ENF" else unpack)(filename)
         data_number, = _struct.unpack(
              _STORED_NUMBER_FORMAT, decrypted.read(stored_bytes_number))
         values = []
@@ -188,7 +188,7 @@ class Container(object):
 if __name__ == "__main__":
     print "start."
     source_dir = _os.path.join(_os.path.dirname(__file__), "..", "material")
-    __integration(_os.path.join(source_dir, "images"), "png")
-    __integration(_os.path.join(source_dir, "bgm"), "ogg", is_fast=True)
-    __integration(_os.path.join(source_dir, "se"), "wav", is_fast=True)
+    __integrate(_os.path.join(source_dir, "images"), "png")
+    __integrate(_os.path.join(source_dir, "bgm"), "ogg", is_fast=True)
+    __integrate(_os.path.join(source_dir, "se"), "wav", is_fast=True)
     print "finish."

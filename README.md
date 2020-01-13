@@ -2,7 +2,7 @@
 
 ![main](https://raw.githubusercontent.com/LucXyMan/storage/master/starseeker/main.png)
 
-Version1.1.0
+Version1.1.1
 
 ## 概要
 RPG+カード+パズルゲーム。

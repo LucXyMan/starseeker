@@ -105,17 +105,24 @@ class Creature(__unit.Unit):
             level=self.level,
             direction="Right" if self._is_right else "Left", state=self.state)
 
+    def _init_image(self, pos):
+        u"""画像初期化。
+        """
+        super(Creature, self)._init_image(pos)
+        self.__dest = self.image.get_rect()
+        self.__dest.topleft = self.rect.topleft = pos
+
     # ---- Charge ----
-    def charge(self, onepieces):
+    def charge(self, one_pieces):
         u"""チャージ処理。
         消去したライン得点をチャージする。
         凍結状態の場合凍結ゲージが減少する。
         """
         if self.is_frozen:
-            self.frozen_time -= self._get_power_up_charge(
-                self._get_score(onepieces))
+            self.frozen_time -= self._get_enhanced_charge(
+                self._get_score(one_pieces))
         else:
-            super(Creature, self).charge(onepieces)
+            super(Creature, self).charge(one_pieces)
 
     # ---- Attack and Defense ----
     def attack(self):
@@ -147,17 +154,17 @@ class Creature(__unit.Unit):
             super(Creature, self).enhance(type_, plus)
 
     # ---- Status Effect ----
-    def poisoning(self):
+    def poison(self):
         u"""毒効果。
         """
         self.__is_poison = False if self.is_frozen else True
 
-    def freezing(self):
+    def freeze(self):
         u"""凍結効果。
         """
         self.__frozen_time = int(0 if self.__is_poison else self._packet << 2)
 
-    def death(self, is_force=False):
+    def die(self, is_force=False):
         u"""即死効果。
         不死属性の場合無効。
         """
@@ -232,6 +239,18 @@ class Creature(__unit.Unit):
         self._power = unit._power
 
     # ---- Update ----
+    def _move(self):
+        u"""移動処理。
+        """
+        if self.rect.left < self.__dest.left:
+            self.rect.move_ip((1, 0))
+        elif self.__dest.left < self.rect.left:
+            self.rect.move_ip((-1, 0))
+        if self.rect.top < self.__dest.top:
+            self.rect.move_ip((0, 1))
+        elif self.__dest.top < self.rect.top:
+            self.rect.move_ip((0, -1))
+
     def _update_finish(self):
         u"""終了時更新。
         """
@@ -252,10 +271,12 @@ class Creature(__unit.Unit):
         """
         import material.sound as __sound
         __sound.SE.play("shockwave")
-        self._Explosion(self)
         self.flash("summon")
+        self._Explosion(self)
         self.__life = 0
+        self.__dest = self.rect.copy()
         self.__is_destroyed = True
+        return self._data.star, self._data.rank << 1
 
     # ---- Property ----
     @property
@@ -265,10 +286,16 @@ class Creature(__unit.Unit):
         return self._data.name
 
     @property
-    def recepters(self):
+    def donors(self):
         u"""受容可能クリーチャー名取得。
         """
-        return self._data.recepters
+        return self._data.donors
+
+    @property
+    def dest(self):
+        u"""スプライトの移動先rectを取得。
+        """
+        return self.__dest
 
     @property
     def state(self):

@@ -40,8 +40,8 @@ class _BitFlag(object):
     def bits(self):
         u"""1のビット数取得。
         """
-        import utils.calc as __calc
-        return sum(__calc.get_number_of_bit(bits) for bits in self._array)
+        import utils.general as __general
+        return sum(__general.get_number_of_bit(bits) for bits in self._array)
 
 
 class BitFlag(_BitFlag):

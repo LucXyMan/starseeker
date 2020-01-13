@@ -46,7 +46,7 @@ class Hold(object):
     def __display(self):
         u"""ピース表示。
         """
-        self.__piece = _pieces.Dropping(self.__keep[0], (0, 0))
+        self.__piece = _pieces.Falling(self.__keep[0], (0, 0))
         self.__window.piece = self.__piece
 
     def __set_item_state(self):
@@ -75,8 +75,8 @@ class Hold(object):
             new, old = target.split("##")
             self.__piece.clear()
             if self.__system.battle.player.armor.is_prevention(new):
-                _, _, armor_info, _ = self.__system.battle.equip
-                armor_info.flash()
+                _, _, armor, _ = self.__system.battle.equip_huds
+                armor.flash()
             elif not self.__system.battle.group.is_prevention(new):
                 pattern, = self.__keep
                 if is_single:
@@ -95,17 +95,24 @@ class Hold(object):
             u"""装飾品効果。
             """
             battle = self.__system.battle
-            effect = battle.player.accessory.addition
+            effect = battle.player.accessory.spell
             if effect:
                 is_single, new, old = effect
-                _, _, armor_info, accessory_info = battle.equip
+                _, _, armor, accessory = battle.equip_huds
                 if battle.player.armor.is_prevention(new):
-                    armor_info.flash()
+                    armor.flash()
                 elif not battle.group.is_prevention(new) and (
                     self.__keep[-1].append(new, old) if is_single else
                     self.__keep[-1].change(new, old)
                 ):
-                    accessory_info.flash()
+                    accessory.flash()
+
+        def __update():
+            u"""パラメータ更新。
+            """
+            self.is_captured = True
+            self.__set_item_state()
+            self.__display()
         if not self.__is_captured:
             __sound.SE.play("hold")
             puzzle = self.__system.puzzle
@@ -115,10 +122,11 @@ class Hold(object):
                 __accessory_effect()
                 puzzle.piece.clear()
                 puzzle.forward()
+                __update()
             else:
-                test = self.virtual
-                test.topleft = puzzle.piece.state.topleft
-                if not test.is_collide(puzzle.field):
+                virtual = self.virtual
+                virtual.topleft = puzzle.piece.state.topleft
+                if not virtual.is_collide(puzzle.field):
                     self.__piece.clear()
                     puzzle.piece.clear()
                     puzzle.piece.pattern.rotate(0)
@@ -126,9 +134,7 @@ class Hold(object):
                     __accessory_effect()
                     puzzle.piece.pattern = self.__keep.pop()
                     puzzle.update_window()
-            self.__set_item_state()
-            self.is_captured = True
-            self.__display()
+                    __update()
 
     def exchange(self, other):
         u"""ピース交換。
@@ -151,7 +157,7 @@ class Hold(object):
         """
         if not self.__keep.is_empty:
             pattern, = self.__keep
-            return _pieces.Dropping(pattern, is_virtual=True)
+            return _pieces.Falling(pattern, is_virtual=True)
 
     @property
     def is_empty(self):

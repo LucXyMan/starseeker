@@ -29,21 +29,26 @@ class Sorcery(__special.Special):
         else:
             self.__catalyst = ()
 
-    def is_usable(self, params):
-        u"""使用可能判定。
-        params[0]: 自身のパラメータ。
-        params[1]: 相手のパラメータ。
+    def _get_target(self, systems, is_reverse):
+        u"""効果対象選択。
+        return: target, other.
         """
-        is_sorcery_useable = (
-            super(Sorcery, self).is_usable((params[0], params[1])) and
+        myself, rival = systems
+        is_agrsv = not self._is_agrsv if is_reverse else self._is_agrsv
+        return (rival, myself) if is_agrsv else (myself, rival)
+
+    def is_available(self, params):
+        u"""使用可能判定。
+        """
+        is_arcana_available = (
+            super(Sorcery, self).is_available(params) and
             self._type in (_const.SORCERY_ARCANUM, _const.ALTERED_ARCANUM))
-        is_joker_useable = (
-            not params[0].has_purify and
-            self._type == _const.JOKER_ARCANUM)
-        return is_sorcery_useable or is_joker_useable
+        is_joker_available = (
+            not params[0].has_purify and self._type == _const.JOKER_ARCANUM)
+        return is_arcana_available or is_joker_available
 
     def adapt(self, catalyst):
-        u"""魔法反応可能な場合に反応後魔術を返す。
+        u"""魔法反応可能な場合に反応後ソーサリーを返す。
         そうでない場合Noneを返す。
         """
         if catalyst and self.__catalyst:
@@ -52,12 +57,7 @@ class Sorcery(__special.Special):
                 return sorcery
         return None
 
-    @property
-    def is_agrsv(self):
-        u"""攻勢属性取得。
-        """
-        return self._is_agrsv
-
+    # ---- Property ----
     @property
     def recepter(self):
         u"""魔法反応対象名取得。

@@ -10,7 +10,7 @@ This software is released under BSD license.
 import random as __random
 import inventories as __inventories
 import utils.const as _const
-__REWARD_SP = 20
+__EQUIP_SP = 3
 __selected_2p = 0
 __versus_level = 0
 __deck = ()
@@ -68,8 +68,8 @@ class _General(Level):
     def __init__(self, equip, skill, deck, player):
         u"""コンストラクタ。
         """
-        self._player = player
         super(_General, self).__init__(equip, skill, deck)
+        self._player = player
 
     def __repr__(self):
         u"""文字列表現取得。
@@ -82,16 +82,6 @@ class _General(Level):
                 skill=self._skill, deck=self._deck))
 
     # ---- Property ----
-    @property
-    def player(self):
-        u"""プレイヤー番号・ランク取得。
-        return: number, rank
-        """
-        if not hasattr(self, "_player"):
-            self._player = divmod(
-                self.number, _const.PLEYERS+1)[::-1]
-        return self._player
-
     @property
     def rewards(self):
         u"""特典カード取得。
@@ -109,22 +99,22 @@ class _General(Level):
 def get_1p(rank):
     u"""1Pレベル取得。
     """
+    level = __inventories.General.get_player(), rank
     return _General(
         __inventories.Equip.get_all(), __inventories.Skill.get_equiped(),
-        __inventories.Deck.get_all(), (__inventories.Utils.get_player(), rank))
+        __inventories.Deck.get_all(), level)
 
 
 def get_2p():
     u"""2Pレベル取得。
     """
-    old = __inventories.Utils.get_player()
-    set_player = __inventories.Utils.set_player
+    old = __inventories.General.get_player()
+    set_player = __inventories.General.set_player
     set_player(get_selected_2p())
+    level = __inventories.General.get_player(), __versus_level
     result = _General(
-        __inventories.Equip.get_all(),
-        __inventories.Skill.get_equiped(),
-        __inventories.Deck.get_all(),
-        (__inventories.Utils.get_player(), __versus_level))
+        __inventories.Equip.get_all(), __inventories.Skill.get_equiped(),
+        __inventories.Deck.get_all(), level)
     set_player(old)
     return result
 
@@ -193,7 +183,7 @@ def get_endless():
             u"""SPと種類によって装備取得。
             """
             import armament.equips as __equips
-            upper = progress*__REWARD_SP
+            upper = progress*__EQUIP_SP
             lower = upper >> 1
             equippable = (
                 __units.get_player(player).equippable +
@@ -203,18 +193,19 @@ def get_endless():
                 item.number != 0 and lower <= item.sp <= upper and
                 item.category in equippable and item.category in categorys)
         result = []
+        head_categorys = _const.HAT_CATEGORY, _const.HELMET_CATEGORY
         for categorys in (
-            _const.WEAPON_CATEGORYS, _const.HEAD_CATEGORYS,
+            _const.WEAPON_CATEGORYS, head_categorys,
             _const.BODY_CATEGORYS, _const.ACCESSORY_CATEGORYS
         ):
             equip = __get_equip()
             result.append(__random.choice(equip).number if equip else 0)
         return tuple(result)
     global __deck, __equip
-    progress = __inventories.Utils.get_endless()+1
-    progress = progress if progress < _const.ENDLESS_LIMIT else \
-        _const.ENDLESS_LIMIT
-    __inventories.Utils.set_endless(progress)
+    progress = __inventories.General.get_endless()+1
+    progress = (
+        progress if progress < _const.ENDLESS_LIMIT else _const.ENDLESS_LIMIT)
+    __inventories.General.set_endless(progress)
     is_boss_battle = _const.ENDLESS_LIMIT <= progress
     player = __random.randint(
         0, _const.PLEYERS if is_boss_battle else _const.PLEYERS-1)
@@ -223,9 +214,9 @@ def get_endless():
     __deck = tuple(card.number for card in _get_deck())
     rank = progress/10
     rank_limit = 3
+    level = player, rank_limit if rank_limit < rank else rank
     return _General(
-        __equip, tuple(skill.number for skill in skills), __deck,
-        (player, rank_limit if rank_limit < rank else rank))
+        __equip, tuple(skill.number for skill in skills), __deck, level)
 
 
 # ---- Reward ----

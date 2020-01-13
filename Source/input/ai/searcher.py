@@ -50,13 +50,12 @@ class Searcher(__PPType):
     def run(self):
         u"""AIの起動。
         """
-        import time as __time
         import command as __command
 
-        def __tactics():
+        def __get_tactics():
             u"""カード使用コマンドを決定。
             """
-            def __delete():
+            def __get_deletion():
                 u"""カードの削除コマンドを設定。
                 """
                 for cmd, card in zip((
@@ -71,23 +70,21 @@ class Searcher(__PPType):
                     ):
                         return [__command.Simple(cmd)]
                 return []
-            if prm_self.is_sorcery_useable:
+            if prm_self.is_arcana_available:
                 arcana = [self.__collectible[i] for i in prm_self.hand]
                 for cmd, arcanum in zip((
                     _const.USE1_COMMAND, _const.USE2_COMMAND,
                     _const.USE3_COMMAND, _const.USE4_COMMAND
                 ), arcana):
                     if arcanum.type == _const.JOKER_ARCANUM:
-                        weight = _const.NUMBER_OF_STAR << prm_self.jokers
-                        is_full = _const.NUMBER_OF_HAND <= prm_self.jokers
+                        weight = _const.NUMBER_OF_STAR*prm_self.jokers
                         if prm_self.has_reverse_sorcery or (
-                            prm_self.resorce.total <= weight or
-                            prm_self.has_talisman and is_full
+                            prm_self.resource.total <= weight
                         ) and not prm_self.has_purify:
                             return [__command.Simple(cmd)]
                     elif (
                         arcanum.type == _const.SUMMON_ARCANUM and
-                        arcanum.is_usable((prm_self, prm_other))
+                        arcanum.is_available((prm_self, prm_other))
                     ):
                         return [__command.Simple(cmd)]
                     elif arcanum.type == _const.SORCERY_ARCANUM:
@@ -95,11 +92,11 @@ class Searcher(__PPType):
                             None if prm_self.catalyst == -1 else
                             self.__collectible[prm_self.catalyst])
                         sorcery = altered if altered else arcanum
-                        if sorcery.is_usable((prm_self, prm_other)):
+                        if sorcery.is_available((prm_self, prm_other)):
                             return [__command.Simple(cmd)]
-                delete_cmds = __delete()
-                if delete_cmds:
-                    return delete_cmds
+                deletion = __get_deletion()
+                if deletion:
+                    return deletion
             return []
 
         def __search():
@@ -107,7 +104,7 @@ class Searcher(__PPType):
             """
             import marker as __marker
 
-            def __point_calc():
+            def __calculate():
                 u"""ピースポイント計算。
                 """
                 import point as __point
@@ -164,7 +161,7 @@ class Searcher(__PPType):
                                 abs(surface[col]-surface[col+1]) for
                                 col in range(1, width-2)))
 
-                    def __get_blocks_above_hole(x):
+                    def __get_closures(x):
                         u"""ホールの上に存在するブロック数を取得。
                         """
                         lowest_space = virtual.table.get_lowest_space(x)
@@ -191,7 +188,7 @@ class Searcher(__PPType):
                             y in range(field.table.height))
                         return sum(__has_pair(line) for line in lines)
 
-                    def __get_heap():
+                    def __get_stack():
                         u"""フィールドの積み重ねを取得。
                         """
                         result = 0
@@ -207,8 +204,7 @@ class Searcher(__PPType):
                     point.max_depth = max(depths) << self.__MAX_DEPTH_WEIGHT
                     point.min_depth = min(depths) << self.__MIN_DEPTH_WEIGHT
                     point.avg_depth = (
-                        sum(depths)/len(depths) <<
-                        self.__AVG_DEPTH_WEIGHT)
+                        sum(depths)/len(depths) << self.__AVG_DEPTH_WEIGHT)
                     point.goal_distance = abs(
                         target.state.left-self.__drop_point.left
                     )+abs(
@@ -216,22 +212,20 @@ class Searcher(__PPType):
                     ) << self.__GOAL_DISTANCE_WEIGHT
                     target.stamp(virtual)
                     point .unlock = (
-                        __get_unlock(virtual) <<
-                        self.__UNLOCK_WEIGHT)
+                        __get_unlock(virtual) << self.__UNLOCK_WEIGHT)
                     if point.is_t_spin:
                         virtual.set_super_drop()
-                    point.completions = (
-                        len(virtual.simple_completion()) <<
-                        __get_heap())
+                    point.completions = len(
+                        virtual.simple_complete()
+                    ) << __get_stack()
                     virtual.turn()
                     point.hole_prevention = squares-sum(
                         1 for cell in virtual.table.below if cell.is_hole
                     ) << self.__HOLE_PREVENTION_WEIGHT
                     point.smoothness = (
-                        squares-__get_roughness() <<
-                        self.__SMOOTHNESS_WEIGHT)
+                        squares-__get_roughness() << self.__SMOOTHNESS_WEIGHT)
                     point.block_above_of_holes = squares-sum(
-                        __get_blocks_above_hole(x) for
+                        __get_closures(x) for
                         x in range(virtual.table.width)
                     ) << self.__BLOCKS_ABOVE_OF_HOLES_WEIGHT
                     point.adjasent_spaces = sum(
@@ -281,18 +275,21 @@ class Searcher(__PPType):
                                     __set_point()
                                     points.append(point)
                 return points
-            field = _pieces.Field(
-                _pieces.Pattern(*prm_self.field), is_virtual=True)
-            piece = _pieces.Dropping(
-                _pieces.Rotatable(*prm_self.piece), is_virtual=True).virtual
-            piece.topleft = prm_self.piece_pos
-            goal = piece.state
             hold_command = __command.Simple(_const.HOLD_COMMAND)
             if prm_self.hold:
-                hold = _pieces.Dropping(
-                    _pieces.Rotatable(*prm_self.hold), is_virtual=True).virtual
-                points = __point_calc()
                 if not self.__is_stop:
+                    field = _pieces.Field(
+                        _pieces.Pattern(*prm_self.field), is_virtual=True)
+                    field.skills = prm_self.skills
+                    piece = _pieces.Falling(
+                        _pieces.Rotatable(*prm_self.piece), is_virtual=True
+                    ).virtual
+                    hold = _pieces.Falling(
+                        _pieces.Rotatable(*prm_self.hold), is_virtual=True
+                    ).virtual
+                    piece.topleft = prm_self.piece_pos
+                    goal = piece.state
+                    points = __calculate()
                     while points:
                         max_point = max(points)
                         points.remove(max_point)
@@ -301,8 +298,7 @@ class Searcher(__PPType):
                         marker = __marker.Marker(field, target, goal)
                         marker.out = self.__out
                         result = marker.mark(
-                            max_point.is_t_spin and
-                            max_point.completions)
+                            max_point.is_t_spin and max_point.completions)
                         if result:
                             if max_point.is_hold:
                                 result = [hold_command]+result
@@ -310,14 +306,12 @@ class Searcher(__PPType):
                 return [__command.Simple(_const.UP_COMMAND)]
             else:
                 return [hold_command]
-        waiting_time = 1./_const.FRAME_RATE
         while self.__is_drive:
-            __time.sleep(waiting_time)
             if not self.__in.empty():
                 cmd, args = self.__in.get_nowait()
                 if cmd == "search":
                     prm_self, prm_other = args
-                    tactics = __tactics()
+                    tactics = __get_tactics()
                     cmds = tactics if tactics else __search()
                     if cmds or (not cmds and self.__is_stop):
                         self.__out.put_nowait(("search", (cmds,)))

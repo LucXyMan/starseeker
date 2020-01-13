@@ -18,7 +18,7 @@ class String(__pygame.sprite.DirtySprite):
     """
     def __init__(
         self, pos, string, size,
-        color="##", shorten=True, groups=None
+        color="##", is_short=True, groups=None
     ):
         u"""コンストラクタ。
         """
@@ -27,7 +27,7 @@ class String(__pygame.sprite.DirtySprite):
         self.__text = str(string)
         self.__size = int(size)
         self.__color = str(color)
-        self.__shorten = bool(shorten)
+        self.__is_short = bool(is_short)
         self.__old = ()
         self.__set_image()
         self.rect.topleft = tuple(pos)
@@ -44,20 +44,20 @@ class String(__pygame.sprite.DirtySprite):
         """
         import material.string as __string
         if self.__old != (
-            self.__text, self.__size, self.__color, self.__shorten
+            self.__text, self.__size, self.__color, self.__is_short
         ):
-            has_rect = hasattr(self, "rect")
-            if has_rect:
+            if hasattr(self, "rect"):
                 midleft = self.rect.midleft
             self.image = __string.get_string(
                 self.__text, self.__size, __string.CharColor(self.__color),
-                self.__shorten)
-            if has_rect:
+                self.__is_short)
+            if hasattr(self, "rect"):
                 self.rect.size = self.image.get_size()
                 self.rect.midleft = midleft
             else:
                 self.rect = self.image.get_rect()
-            self.__old = self.__text, self.__size, self.__color, self.__shorten
+            self.__old = (
+                self.__text, self.__size, self.__color, self.__is_short)
 
     @property
     def string(self):
@@ -99,19 +99,19 @@ class String(__pygame.sprite.DirtySprite):
         self.__set_image()
 
     @property
-    def shorten(self):
+    def is_short(self):
         u"""文字間隔取得。
         """
-        return self.__shorten
+        return self.__is_short
 
-    @shorten.setter
-    def shorten(self, value):
+    @is_short.setter
+    def is_short(self, value):
         u"""文字間隔設定。
         """
-        self.__shorten = bool(value)
+        self.__is_short = bool(value)
 
 
-class Info(String):
+class Notice(String):
     u"""ゲーム情報表示。
     """
     __INTERVAL = _const.FRAME_RATE*3
@@ -121,35 +121,34 @@ class Info(String):
     __is_ignore = False
 
     @classmethod
-    def send(cls, string, is_warning=False):
+    def notify(cls, string, is_warning=False):
         u"""情報文字列設定。
         """
-        if Info.__is_ignore and not is_warning:
-            Info.__is_ignore = False
+        if Notice.__is_ignore and not is_warning:
+            Notice.__is_ignore = False
         else:
             if is_warning:
-                Info.__color = _const.YELLOW+"#"+_const.GRAY+"#"+_const.BLACK
-                Info.__is_ignore = True
+                Notice.__color = _const.YELLOW+"#"+_const.GRAY+"#"+_const.BLACK
+                Notice.__is_ignore = True
             else:
-                Info.__color = _const.WHITE+"#"+_const.GRAY+"#"+_const.BLACK
-            Info.__texts = _collections.deque(string.split("#"))
-            Info.__waiting = 0
+                Notice.__color = _const.WHITE+"#"+_const.GRAY+"#"+_const.BLACK
+            Notice.__texts = _collections.deque(string.split("#"))
+            Notice.__waiting = 0
 
     def __init__(self, groups=None):
         u"""コンストラクタ。
         """
-        super(Info, self).__init__(
+        super(Notice, self).__init__(
             (0, 0), "", _const.SYSTEM_CHAR_SIZE+2, groups=groups)
-        _layouter.Menu.set_info(self)
+        _layouter.Menu.set_notice(self)
 
     def update(self):
         u"""文字列の更新。
         """
-        if Info.__waiting == 0:
-            if Info.__texts:
-                self.string = Info.__texts.popleft()
-                self.color = Info.__color
-                _layouter.Menu.set_info(self)
-                Info.__waiting = self.__INTERVAL
-        if 0 <= Info.__waiting:
-            Info.__waiting -= 1
+        if Notice.__waiting == 0 and Notice.__texts:
+            self.string = Notice.__texts.popleft()
+            self.color = Notice.__color
+            _layouter.Menu.set_notice(self)
+            Notice.__waiting = self.__INTERVAL
+        if 0 <= Notice.__waiting:
+            Notice.__waiting -= 1

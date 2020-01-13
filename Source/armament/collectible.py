@@ -48,33 +48,22 @@ class Collectible(object):
         return tuple(result)
 
     # ---- Getter ----
-    def get_costs(self, cut):
+    def get_costs(self, division):
         u"""コスト取得。
         """
         import utils.const as __const
-        cost = [0, 0, 0, 0, 0, 0, 0]
-        energy = __const.STAR_ENERGY >> cut
-        if self._rank == 0 or self._star == -1:
-            return tuple(cost),
-        cost[self._star] = self._rank*energy
-        costs = tuple(cost),
+        energy = __const.STAR_ENERGY >> division
+        if self._star == -1 or self._rank == 0:
+            return (-1, 0),
+        costs = (self._star, self._rank*energy),
         if self._star == 6:
-            for i in range(5):
-                cost = [0, 0, 0, 0, 0, 0, 0]
-                cost[i] = (self._rank+1)*energy
-                costs += tuple(cost),
+            costs += tuple((i, (self._rank+1)*energy) for i in range(5))
         elif self._star == 5:
-            cost = [0, 0, 0, 0, 0, 0, 0]
-            cost[6] = (self._rank+1)*energy
-            costs += tuple(cost),
+            costs += (6, (self._rank+1)*energy),
         else:
-            cost = [0, 0, 0, 0, 0, 0, 0]
-            cost[(self._star-1) % 5] = (self._rank+1)*energy
-            costs += tuple(cost),
-            cost = [0, 0, 0, 0, 0, 0, 0]
-            cost[5] = (self._rank+1)*energy
-            costs += tuple(cost),
-        return tuple(costs)
+            costs += ((self._star-1) % 5, (self._rank+1)*energy),
+            costs += (5, (self._rank+1)*energy),
+        return costs
 
     def get_enchant(self, level):
         u"""追加効果取得。
@@ -110,12 +99,6 @@ class Collectible(object):
         """
         return self._type
 
-    def is_usable(self, params):
-        u"""使用可能判定。
-        """
-        cost, _ = params[0].resorce.get_available(self)
-        return bool(cost)
-
     @property
     def rank(self):
         u"""ランク取得。
@@ -147,11 +130,12 @@ class Collectible(object):
         """
         return ""
 
-    @property
-    def is_no_cost(self):
-        u"""ノーコスト判定。
+    # ------ Detection ------
+    def is_available(self, params):
+        u"""使用可能判定。
         """
-        return self._rank == 0 or self._star == -1
+        myself, _ = params
+        return bool(myself.resource.get_available_state(self) & 0x00F)
 
 
 def init():

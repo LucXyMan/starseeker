@@ -8,6 +8,7 @@ This software is released under BSD license.
 HUDモジュール。
 """
 import pygame as _pygame
+import utils.const as _const
 
 
 class HUD(_pygame.sprite.DirtySprite):
@@ -89,7 +90,7 @@ class Equip(HUD):
                 self.image = self.__item.icon
                 self.__animation = None
         else:
-            if not self.__item.is_useable and self.__item.number != 0:
+            if not self.__item.is_available and self.__item.number != 0:
                 image = __image.copy(self.__base_image)
                 image.blit(self.__seal_images[__counter.get_frame(4)], (0, 0))
                 self.image = image
@@ -101,20 +102,23 @@ class Star(HUD):
     u"""スター表示。
     取得したスターの量を表示する。
     """
-    __FRAMES = 4
-    __IMAGE_NAMES = (
+    __FRAME = 4
+    __IMAGES = (
         "jupiter", "mars", "saturn", "venus", "mercury", "moon", "sun")
+    __EFFECTS = (
+        _const.JUPITER_EFFECT, _const.MARS_EFFECT, _const.SATURN_EFFECT,
+        _const.VENUS_EFFECT, _const.MERCURY_EFFECT, _const.MOON_EFFECT,
+        _const.SUN_EFFECT)
     __LV2_THRESHOLD = 8
     __LV3_THRESHOLD = 16
 
-    def __init__(self, resorce, type_, groups=None):
+    def __init__(self, resource, type_, groups=None):
         u"""__typeによりスター画像種類を決定。
         """
         super(Star, self).__init__(groups)
-        self.__resorce = resorce
+        self.__resource = resource
         self.__type = type_
-        self.__value = self.__dest = 0
-        self.__old_dest = -1
+        self.__amount = 0
         self.update()
         self.rect = self.image.get_rect()
 
@@ -123,31 +127,36 @@ class Star(HUD):
         """
         import material.block as __block
         import material.string as __string
-        import utils.const as __const
+        import utils.counter as __counter
 
-        def __set_dest():
-            u"""目的の値を設定。
-            """
-            stars = self.__resorce.stars
-            if self.__old_dest != stars[self.__type]:
-                self.__dest = stars[self.__type]
-                self.__old_dest = stars[self.__type]
-
-        def __rise_and_fall():
+        def __fluctuate():
             u"""目盛りの増減。
             """
-            if self.__value < self.__dest:
-                self.__value += 1
-            elif self.__value > self.__dest:
-                self.__value -= 1
+            def __effect():
+                u"""エフェクト発動。
+                """
+                import random as __random
+                import sprites.effects as __effects
+                pos = self.__amount >> 1
+                __effects.Image((
+                    self.rect.centerx+__random.randint(-pos, pos),
+                    self.rect.centery+__random.randint(-pos, pos)),
+                    self.__EFFECTS[self.__type], vector=(0, -1))
+            stars = self.__resource.stars
+            if self.__amount < stars[self.__type]:
+                self.__amount += 1
+            elif self.__amount > stars[self.__type]:
+                self.__amount -= 1
+                __effect()
         super(Star, self).update()
-        __set_dest()
-        __rise_and_fall()
+        __fluctuate()
         dummy, = __block.get("dummy")
-        images = __block.get(self.__IMAGE_NAMES[self.__type])
-        self.image = __string.get_subscript(
-            images[self.__FRAMES*(
-                0 if self.__value < self.__LV2_THRESHOLD else
-                1 if self.__value < self.__LV3_THRESHOLD else
-                2)], str(self.__value >> __const.STAR_ENERGY_SHIFT),
-            __string.ElmCharColor.get(self.__type)) if self.__value else dummy
+        images = __block.get(self.__IMAGES[self.__type])
+        level = (
+            0 if self.__amount < self.__LV2_THRESHOLD else
+            1 if self.__amount < self.__LV3_THRESHOLD else 2)
+        image = __string.get_subscript(
+            images[self.__FRAME*level+__counter.get_frame(4)],
+            str(self.__amount >> _const.STAR_ENERGY_SHIFT),
+            __string.ElmCharColor.get(self.__type))
+        self.image = image if self.__amount else dummy

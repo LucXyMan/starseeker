@@ -11,7 +11,7 @@ This software is released under BSD license.
 # ---- System ----
 CAPTION = u"Star Seeker"
 COPYRIGHT = u"Copyright (c) 2019 Yukio Kuro"
-VERSION = u"1.1.0"
+VERSION = u"1.1.1"
 IS_MULTIPROCESSING = True
 BASE_SCREEN_SIZE = 320, 240
 MAIN_SCREEN_SIZE = 640, 480
@@ -45,30 +45,18 @@ RESULT_STATUS = 9
 # ---- Game ----
 PRESS_POINT = 100
 PRESS_LIMIT = PRESS_POINT << 4
-SINGLE_SCORE = 100
-HALF_SCORE = SINGLE_SCORE >> 1
-QUARTER_SCORE = SINGLE_SCORE >> 2
-DOUBLE_SCORE = SINGLE_SCORE << 1
 SOLID_PRESS_LEVEL = 4
 ADAMANT_PRESS_LEVEL = 8
 STAR_ENERGY_SHIFT = 2
 STAR_ENERGY = 1 << STAR_ENERGY_SHIFT
-NAME_LIMIT = 10
 ENDLESS_LIMIT = 40
 ENDLESS_INTRVAL = 5
 SKILL_CAPACITY = 8
 DECK_CAPACITY = 16
 PLEYERS = 8
 BASIC_COLORS = 8
-FIELD_UNITS = 3
 NUMBER_OF_STAR = 7
 NUMBER_OF_HAND = 4
-# ---- Equip ----
-VERY_LOW_CORRECTION = 0.2
-LOW_CORRECTION = 0.8
-MID_CORRECTION = 1.0
-HIGH_CORRECTION = 1.2
-VERY_HIGH_CORRECTION = 1.8
 # ---- Name ----
 ALTAIR_NAME = u"アルタイル"
 CORVUS_NAME = u"コーヴァス"
@@ -114,46 +102,47 @@ ALCHMIC_TRIBE = u"錬金生物"
 REGULAR_TRIBES = BEAST_TRIBE, SKY_TRIBE, ALCHMIC_TRIBE
 UNDEAD_TRIBE = u"不死"
 DRAGON_TRIBE = u"竜"
-STAR_TYPES = u"木", u"火", u"土", u"金", u"水", u"月", u"太陽"
+STAR_CHARS = u"木", u"火", u"土", u"金", u"水", u"月", u"太陽"
 # ---- Skill ----
-FIRE_EATER_SKILL = u"ファイアイーター#マグマを破壊する"
-ICE_PICKER_SKILL = u"アイスピッカー#アイスを破壊する"
-ACID_ERASER_SKILL = u"アシッドイレーザー#アシッドを破壊する"
-STONE_BREAKER_SKILL = u"ストーンブレーカー#ストーンを破壊する"
-POWER_STROKE_SKILL = u"パワーストローク#硬いブロックを一撃で破壊する"
-EXORCIST_SKILL = u"エクソシスト#デーモン・ゴーストを除去する"
+FIRE_EATER_SKILL = u"ファイアイーター#マグマを破壊"
+ICE_PICKER_SKILL = u"アイスピッカー#アイスを破壊"
+ACID_ERASER_SKILL = u"アシッドイレーザー#アシッドを破壊"
+STONE_BREAKER_SKILL = u"ストーンブレーカー#ストーンを破壊"
+POWER_STROKE_SKILL = u"パワーストローク#硬いブロックを一撃で破壊"
+EXORCIST_SKILL = u"エクソシスト#悪霊を破壊"
 PHANTOM_THIEF_SKILL = u"ファントムシーフ#宝箱をカギ無しで開ける"
-VAMPIRE_SKILL = u"ヴァンピール#直接攻撃で相手のスターを吸収する"
-ROB_CARD_SKILL = u"ロブカード#直接攻撃で相手のカードを強奪する"
-COMPLETE_ASSIST_SKILL = u"コンプアシスト#ライン補完に必要なブロック-1"
-PURIFY_SKILL = u"ピュリファイ#ジョーカーを削除可能"
-DOUBLE_SPELL_SKILL = u"ダブルスペル#連続でサモン・ソーサリー使用可能"
+WATER_PRESS_SKILL = u"ウォータープレス#プレスをウォーターに"
+CHOCOLATE_PRESS_SKILL = u"チョコレートプレス#プレスをチョコレートに"
+COMPLETE_ASSIST_SKILL = u"コンプアシスト#消去に必要なブロック-1"
+ROB_CARD_SKILL = u"ロブカード#攻撃時に相手のカード強奪"
+PURIFY_SKILL = u"ピュリファイ#ジョーカーを削除"
+DOUBLE_SPELL_SKILL = u"ダブルスペル#連続でアルカナ使用"
 SOUL_EAT_SKILL = u"ソウルイート#サモン削除時にスター増加"
 REVERSE_SORCERY_SKILL = u"リバースソーサリー#ソーサリー効果逆転"
 ANTI_SUMMONING_SKILL = u"アンチサモーニング#シールドでサモン封印"
-POISON_SUMMON_SKILL = u"ポイズンサモン#クリーチャー召喚時に毒を付与"
-FORCE_JOKER_SKILL = u"フォースジョーカー#手札にジョーカー追加※敵専用"
-SHEPHERD_SKILL = u"シェパード#"+BEAST_TRIBE+u"クリーチャーコスト減少"
-FALCONER_SKILL = u"ファルコナー#"+SKY_TRIBE+u"クリーチャーコスト減少"
-ALCHMIST_SKILL = u"アルケミスト#"+ALCHMIC_TRIBE+u"クリーチャーコスト減少"
-NECROMANCER_SKILL = u"ネクロマンサー#"+UNDEAD_TRIBE+u"クリーチャーコスト減少"
-DRAGON_MASTER_SKILL = u"ドラゴンマスター#"+DRAGON_TRIBE+u"クリーチャーコスト減少"
-HALF_JUPITER_SKILL = u"ハーフジュピター#木スターコスト減少"
-HALF_MARS_SKILL = u"ハーフマーズ#火スターコスト減少"
-HALF_SATURN_SKILL = u"ハーフサターン#土スターコスト減少"
-HALF_VENUS_SKILL = u"ハーフヴェヌス#金スターコスト減少"
-HALF_MERCURY_SKILL = u"ハーフメルクリー#水スターコスト減少"
-MOON_CHILD_SKILL = u"ムーンチャイルド#月スターコスト減少"
-SON_OF_SUN_SKILL = u"サンオブサン#太陽スターコスト減少"
-WATER_PRESS_SKILL = u"ウォータープレス#プレスブロックをウォーターに"
-CHOCOLATE_PRESS_SKILL = u"チョコレートプレス#プレスブロックをチョコレートに"
-SAFETY_SKILL = u"セーフティ#ブロックによるスター減少効果防止"
-TALISMAN_SKILL = u"タリスマン#邪悪な力によるスター減少効果防止"
-SHORT_TURN_SKILL = u"ショートターン#持続効果間隔短縮"
+POISON_SUMMON_SKILL = u"ポイズンサモン#召喚時に毒を付与"
+FORCE_JOKER_SKILL = u"フォースジョーカー#*手札にジョーカー追加*"
+SHEPHERD_SKILL = u"シェパード#"+BEAST_TRIBE+u"サモンコスト減少"
+FALCONER_SKILL = u"ファルコナー#"+SKY_TRIBE+u"サモンコスト減少"
+ALCHMIST_SKILL = u"アルケミスト#"+ALCHMIC_TRIBE+u"サモンコスト減少"
+NECROMANCER_SKILL = u"ネクロマンサー#"+UNDEAD_TRIBE+u"サモンコスト減少"
+DRAGON_MASTER_SKILL = u"ドラゴンマスター#"+DRAGON_TRIBE+u"サモンコスト減少"
+HALF_JUPITER_SKILL = u"ハーフジュピター#木アルカナコスト減少"
+HALF_MARS_SKILL = u"ハーフマーズ#火アルカナコスト減少"
+HALF_SATURN_SKILL = u"ハーフサターン#土アルカナコスト減少"
+HALF_VENUS_SKILL = u"ハーフヴェヌス#金アルカナコスト減少"
+HALF_MERCURY_SKILL = u"ハーフメルクリー#水アルカナコスト減少"
+MOON_CHILD_SKILL = u"ムーンチャイルド#月アルカナコスト減少"
+SON_OF_SUN_SKILL = u"サンオブサン#太陽アルカナコスト減少"
+VAMPIRE_SKILL = u"ヴァンピール#攻撃時に相手のスター吸収"
+CONVERT_RESOURCE_SKILL = u"コンバートリソース#あふれたスターを変換"
+SAFETY_SKILL = u"セーフティ#毒性ブロック効果防止"
+TALISMAN_SKILL = u"タリスマン#ジョーカー減衰効果防止"
 LIFE_BOOST_SKILL = u"ライフブースト#生命の欠片効果倍増"
 MIGHTY_SKILL = u"マイティ#力の欠片効果倍増"
 TOUGHNESS_SKILL = u"タフネス#守りの欠片効果倍増"
 SPEEDSTER_SKILL = u"スピードスター#速さの欠片効果倍増"
+SHORT_TURN_SKILL = u"ショートターン#持続効果間隔短縮"
 SWORD_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=SWORD_CATEGORY)
 WAND_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=WAND_CATEGORY)
 HEAVY_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=HEAVY_CATEGORY)
@@ -162,17 +151,31 @@ HAT_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=HAT_CATEGORY
 HELMET_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=HELMET_CATEGORY)
 ARMOR_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=ARMOR_CATEGORY)
 ROBE_EQUIP_SKILL = u"{equip}装備#{equip}装備可能".format(equip=ROBE_CATEGORY)
-# ---- Effect ----
+# ---- Equip ----
+VERY_LOW_CORRECTION = 0.2
+LOW_CORRECTION = 0.5
+MID_CORRECTION = 1.0
+HIGH_CORRECTION = 1.2
+VERY_HIGH_CORRECTION = 1.5
+# ---- Star ----
+JUPITER_EFFECT = "blue_line"
+MARS_EFFECT = "red_fire"
+SATURN_EFFECT = "purple_light"
+VENUS_EFFECT = "yellow_line"
+MERCURY_EFFECT = "blue_bubble"
+MOON_EFFECT = "black_fire"
+SUN_EFFECT = "yellow_light"
+# ---- Ability ----
 ENCHANT_ABILITY = "enchant"
 PERSISTENCE_ABILITY = "persistence"
 PREVENTION_ABILITY = "prevention"
 ADDITION_ABILITY = "addition"
+# ---- Block Nmae ----
 BASIC_NAMES = "Normal#Solid#Adamant"
 STAR_NAMES = "Jupiter#Mars#Saturn#Venus#Mercury#Moon#Sun"
 SHARD_NAMES = "Life#Power#Protect#Speed"
 KEY_NAMES = "BronzeKey#SilverKey#GoldKey"
-LOCKED_NAMES = "BronzeChest#SilverChest#GoldChest"
-CHEST_NAMES = "IronChest#"+LOCKED_NAMES
+CHEST_NAMES = "IronChest#BronzeChest#SilverChest#GoldChest"
 CARD_NAMES = "Summon#Sorcery#Shield#Support"
 ITEM_NAMES = str(
     STAR_NAMES+"#"+SHARD_NAMES+"#" +
@@ -182,25 +185,27 @@ IRREGULAR_NAMES = "Ruined#Magma#Ice#Matango#Acid#Poison#Stone"
 DEMON_NAMES = "Gargoyle#BlockEater#BlockDemon#ArchDemon"
 GHOST_NAMES = "RIP#FireGhost#IceGhost#PoisonGhost"
 MIMIC_NAMES = "BronzeMimic#SilverMimic#GoldMimic#PandoraMimic"
-MAGMA_EFFECT = "Magma##Normal"
-ICE_EFFECT = "Ice##Normal#Solid"
-STONE_EFFECT = "Stone##"+BASIC_NAMES
-MATANGO_EFFECT = "Matango##"+BASIC_NAMES
-ACID_EFFECT = "Acid##Normal#Solid"
-POISON_EFFECT = "Poison##Normal"
-JUPITER_EFFECT = "Jupiter##"+BASIC_NAMES
-MARS_EFFECT = "Mars##"+BASIC_NAMES
-SATURN_EFFECT = "Saturn##"+BASIC_NAMES
-VENUS_EFFECT = "Venus##"+BASIC_NAMES
-MERCURY_EFFECT = "Mercury##"+BASIC_NAMES
-MOON_EFFECT = "Moon##"+BASIC_NAMES
-SUN_EFFECT = "Sun##"+BASIC_NAMES
-LIFE_EFFECT = "Life##"+BASIC_NAMES
-POWER_EFFECT = "Power##"+BASIC_NAMES
-PROTECT_EFFECT = "Protect##"+BASIC_NAMES
-SPEED_EFFECT = "Speed##"+BASIC_NAMES
-SLIME_EFFECT = "Slime##"+BASIC_NAMES
-BLOCK_EATER_EFFECT = "BlockEater##Normal"
+# ---- Change ----
+MAGMA_CHANGE = "Magma##Normal"
+ICE_CHANGE = "Ice##Normal#Solid"
+STONE_CHANGE = "Stone##"+BASIC_NAMES
+MATANGO_CHANGE = "Matango##"+BASIC_NAMES
+ACID_CHANGE = "Acid##Normal#Solid"
+POISON_CHANGE = "Poison##Normal#Jupiter#Mars#Venus#Mercury#Moon#Sun"
+JUPITER_CHANGE = "Jupiter##"+BASIC_NAMES
+MARS_CHANGE = "Mars##"+BASIC_NAMES
+SATURN_CHANGE = "Saturn##"+BASIC_NAMES
+VENUS_CHANGE = "Venus##"+BASIC_NAMES
+MERCURY_CHANGE = "Mercury##"+BASIC_NAMES
+MOON_CHANGE = "Moon##"+BASIC_NAMES
+SUN_CHANGE = "Sun##"+BASIC_NAMES
+LIFE_CHANGE = "Life##"+BASIC_NAMES
+POWER_CHANGE = "Power##"+BASIC_NAMES
+PROTECT_CHANGE = "Protect##"+BASIC_NAMES
+SPEED_CHANGE = "Speed##"+BASIC_NAMES
+SLIME_CHANGE = "Slime##"+BASIC_NAMES
+BLOCK_EATER_CHANGE = "BlockEater##Normal"
+# ---- Flag ----
 FORCE_CRACK = 0b1
 UNLOCK_CRACK = 0b10
 TREASURE_CRACK = 0b100
@@ -211,6 +216,10 @@ STONE_BREAKER_CRACK = 0b1000000
 POWER_CRACK = 0b10000000
 EXORCIST_CRACK = 0b100000000
 # ---- Cell ----
+SINGLE_SCORE = 100
+HALF_SCORE = SINGLE_SCORE >> 1
+QUARTER_SCORE = SINGLE_SCORE >> 2
+DOUBLE_SCORE = SINGLE_SCORE << 1
 LOW_MALIGNANCY = 1
 MID_MALIGNANCY = LOW_MALIGNANCY << 1
 HIGH_MALIGNANCY = LOW_MALIGNANCY << 2
@@ -297,11 +306,11 @@ RAINBOW = (
     DARK_CYAN, DARK_BLUE, DARK_MAGENTA, DARK_MAGENTA)
 BURNING = RED, ORANGE, YELLOW, GREEN, YELLOW, ORANGE, RED, PURPLE
 # ---- Debug ----
+IS_CHEAT = False
 IS_OUTPUT = False
 IS_FALL_STOP = False
 IS_SPACE_MINIMAP = False
 IS_WINDOW_TRANSPARENT = False
-IS_BLOCK_RANDOM_STEP = False
 IS_SP_UNLIMITED = False
 IS_SYSTEM_TEST = False
 PIECE_TEST = ""
