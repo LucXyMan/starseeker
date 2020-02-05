@@ -50,13 +50,11 @@ class Item(_Icon):
                     item.is_locked or item.is_sealed, item.rank).icon
         ep_value = _inventories.get_sp()
         utils_value = _inventories.General.get_value()
-        level_value = _inventories.Level.get_value()
         items_value = _inventories.Item.get_value()
         skill_value = _inventories.Skill.get_value()
         equip_value = _inventories.Equip.get_value()
         if self._old != (
-            ep_value, utils_value, level_value, items_value, skill_value,
-            equip_value
+            ep_value, utils_value, items_value, skill_value, equip_value
         ):
             item = __equips.get(self._number)
             has = _inventories.Item.has(self._number-1)
@@ -69,8 +67,7 @@ class Item(_Icon):
                 "")
             self.image = _string.get_subscript(image, subscript)
             self._old = (
-                ep_value, utils_value, level_value, items_value, skill_value,
-                equip_value)
+                ep_value, utils_value, items_value, skill_value, equip_value)
             if hasattr(self, "rect"):
                 self.rect.size = self.image.get_size()
             else:

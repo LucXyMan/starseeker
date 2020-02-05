@@ -14,7 +14,7 @@ def init(container):
     """
     global __miscs
 
-    def __bg_processing():
+    def __process_background():
         u"""背景画像加工。
         """
         import utils.image as __image
@@ -24,7 +24,7 @@ def init(container):
         ):
             __miscs[name] = __image.load(container.get(name+".png"))
     __miscs = {}
-    __bg_processing()
+    __process_background()
 
 
 def get(key):

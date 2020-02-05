@@ -68,7 +68,7 @@ class _Next(_String):
     def update(self):
         u"""文字列更新。
         """
-        level = _inventories.General.get_endless()+1
+        level = _inventories.Endless.get_progress()+1
         self.string = u"NextLevel:{level}".format(
             level=(level if level < _const.ENDLESS_LIMIT else u"??"))
         _layouter.Menu.set_speed(self)

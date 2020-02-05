@@ -198,6 +198,7 @@ class Double(_Clone):
             unit = _random.choice(target_group)
             if other_group.summon(unit.data):
                 other_group[-1].copy_parameter(unit)
+                other.update()
 
 
 class Attract(_Clone):
@@ -229,6 +230,7 @@ class Attract(_Clone):
                 other_group.summon(unit.data)
             ):
                 other_group[-1].copy_parameter(unit)
+                other.update()
                 unit.die(True)
                 target_group.destroy()
                 target.update()
@@ -274,11 +276,13 @@ class Spawn(_sorcery.Sorcery):
                         __const.ADDITION_ABILITY+"###" +
                         __general.get_skill_names(
                             __const.COMPLETE_ASSIST_SKILL)))
-                group.summon(summon)
+                if group.summon(summon):
+                    target.update()
             else:
                 number, = __collectible.Collectible.get_by_name(self.__name)
                 for _ in range(group.empty if self.__is_whole else 1):
-                    group.summon(__collectible.get(number))
+                    if group.summon(__collectible.get(number)):
+                        target.update()
 
     def is_available(self, params):
         u"""使用可能判定。

@@ -15,7 +15,7 @@ def init(container):
     import utils.image as __image
     global __effects
 
-    def __light_processing():
+    def __process_light():
         u"""光エフェクト画像加工。
         """
         basic = __image.load(container.get("light_effect.png"))
@@ -23,7 +23,7 @@ def init(container):
             __effects[name+"_light"] = __image.get_segment(
                 __image.get_another_color(basic, i), (5, 1), (9, 9))
 
-    def __fire_processing():
+    def __process_fire():
         u"""炎エフェクト画像加工。
         """
         basic = __image.load(container.get("fire_effect.png"))
@@ -38,7 +38,7 @@ def init(container):
             __effects[name+"_smoke"] = __image.get_segment(
                 image, (5, 1), (11, 11), (0, 22))
 
-    def __bubble_processing():
+    def __process_bubble():
         u"""泡エフェクト画像加工。
         """
         basic = __image.load(container.get("bubble_effect.png"))
@@ -51,7 +51,7 @@ def init(container):
             __effects[name+"_line"] = __image.get_segment(
                 image, (6, 1), (1, 6), (0, 19))
 
-    def __star_processing():
+    def __process_star():
         u"""星形エフェクト画像加工処理。
         """
         def __create_rainbow(start):
@@ -68,8 +68,8 @@ def init(container):
             __effects["comet_"+str(i)] = __create_rainbow(i)
     __effects = {}
     for func in (
-        __light_processing, __fire_processing,
-        __bubble_processing, __star_processing
+        __process_light, __process_fire,
+        __process_bubble, __process_star
     ):
         func()
 

@@ -24,6 +24,7 @@ class Thinker(object):
         (3, 0): True, (3, 1): False, (3, 2): False}
     __TIMEOUT = 1
     __REACTION_RATE = 6
+    __IS_ADVANCED_DETECTION = False
 
     def __init__(self, systems):
         u"""コンストラクタ。
@@ -124,12 +125,18 @@ class Thinker(object):
                 not self.__is_standby and self.__cmds
             ):
                 field = self.__system.puzzle.field
-                has_joker = self.__system.puzzle.has_joker
+                parent = self.__system.puzzle.parent
+                self.__system.puzzle.next
+                if self.__IS_ADVANCED_DETECTION:
+                    has_item = parent.has_item or parent.has_level_up
+                    has_bad_item = parent.has_joker or parent.has_bad_level_up
+                else:
+                    has_item = parent.has_item
+                    has_bad_item = parent.has_joker
                 has_rs = self.__system.has_skill(__const.REVERSE_SORCERY_SKILL)
-                has_item = (
-                    self.__system.puzzle.has_item or has_joker and has_rs)
+                has_item = has_item or parent.has_joker and has_rs
                 is_more_than_half = field.highest <= field.height >> 1
-                rush = has_item+is_more_than_half-has_joker
+                rush = has_item+is_more_than_half-has_bad_item
                 waiting = self.__waiting+1
                 input_interval = (
                     self.__REACTION_RATE << 1 if rush < 0 else

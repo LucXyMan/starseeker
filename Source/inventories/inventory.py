@@ -43,6 +43,7 @@ class Inventory(object):
     # ---- Data Size ----
     __GENERAL_DATA_SIZE = 1
     __LEVEL_DATA_SIZE = 2
+    __ENDLESS_DATA_SIZE = 1
     __ITEM_DATA_SIZE = 6
     __CARD_DATA_SIZE = 6
     __EQUIP_DATA_SIZE = _const.PLEYERS
@@ -50,11 +51,17 @@ class Inventory(object):
     __DECK_DATA_SIZE = _const.PLEYERS*__CARD_DATA_SIZE
     # ---- Time ----
     __TIME_LIMIT = 359999
+    # ---- General ----
+    _DIFFICULTY_SLOT = 1
+    _SPEED_SLOT = 2
     # ---- SP ----
     __CARD_PRICE = 4
     __SP_LIMIT = 999
     # ---- Deck ----
     __STARTER_DECK = 0, 0, 13, 13, 20, 20, 39, 59, 65, 72, 82, 84
+    # ---- Debug ----
+    __IS_CHEAT = False
+    __IS_SP_UNLIMITED = False
 
     def __init__(self):
         u"""各パラメータの設定。
@@ -62,6 +69,7 @@ class Inventory(object):
         __sp: 取得スターポイント。
         _general: 汎用パラメータ。
         _level: レベルクリア状態。
+        _endless: エンドレス状態。
         _item: 取得アイテム状態。
         _card: 最大3枚の取得済カード。
         _equip: プレイヤー8人分の装備・スキル・デッキの状態。
@@ -82,10 +90,13 @@ class Inventory(object):
                     number = i*len(Inventory._deck)/_const.PLEYERS+card
                     Inventory._deck.set(number, Inventory._deck.get(number)+1)
         Inventory.__time = 0
-        Inventory.__sp = 50
-        Inventory.__GeneralFlag = __bitflag.ByteNumber
+        Inventory.__sp = 100
+        Inventory.__GeneralFlag = __bitflag.NibbleNumber
         Inventory._general = self.__GeneralFlag([0]*self.__GENERAL_DATA_SIZE)
-        Inventory._general.set(3, 2)
+        Inventory._general.set(self._DIFFICULTY_SLOT, 1)
+        Inventory._general.set(self._SPEED_SLOT, 2)
+        Inventory.__EndlessFlag = __bitflag.ByteNumber
+        Inventory._endless = self.__EndlessFlag([0]*self.__ENDLESS_DATA_SIZE)
         Inventory.__LevelFlag = __bitflag.BitFlag
         Inventory._level = self.__LevelFlag([0]*self.__LEVEL_DATA_SIZE)
         Inventory.__ItemFlag = __bitflag.BitFlag
@@ -129,6 +140,8 @@ class Inventory(object):
             _struct.pack(
                 "<{}I".format(cls.__LEVEL_DATA_SIZE), *cls._level.raw) +
             _struct.pack(
+                "<{}I".format(cls.__ENDLESS_DATA_SIZE), *cls._endless.raw) +
+            _struct.pack(
                 "<{}I".format(cls.__ITEM_DATA_SIZE), *cls._item.raw) +
             _struct.pack(
                 "<{}I".format(cls.__CARD_DATA_SIZE), *cls._card.raw) +
@@ -140,7 +153,7 @@ class Inventory(object):
                 "<{}I".format(cls.__DECK_DATA_SIZE), *cls._deck.raw) +
             cls.__get_hash((
                 (cls.__time,), (cls.__sp,), cls._general.raw, cls._level.raw,
-                cls._item.raw, cls._card.raw, cls._equip.raw,
+                cls._endless.raw, cls._item.raw, cls._card.raw, cls._equip.raw,
                 cls._skill.raw, cls._deck.raw))))
 
     @classmethod
@@ -155,8 +168,8 @@ class Inventory(object):
             データ改ざんされている場合False、正しい場合Trueを返す。
             """
             current = cls.__get_hash((
-                (time,), (sp,), general.raw, level.raw, items.raw, cards.raw,
-                equip.raw, skill.raw, deck.raw))
+                (time,), (sp,), general.raw, level.raw,  endless.raw,
+                items.raw, cards.raw, equip.raw, skill.raw, deck.raw))
             if hash_ == current:
                 if _const.IS_OUTPUT:
                     print str(hash_), u"==", current, u" :Is correct."
@@ -169,9 +182,9 @@ class Inventory(object):
         def __cheat_apply():
             u"""チート適用。
             """
-            if _const.IS_CHEAT:
+            if cls.__IS_CHEAT:
                 cls._level.on(35)
-                cls._general.set(2, 40)
+                cls._endless.set(0, 40)
                 for i in range(len(cls._item)):
                     cls._item.on(i)
                 for i in range(len(cls._card)):
@@ -187,6 +200,9 @@ class Inventory(object):
             level = cls.__LevelFlag(_struct.unpack(
                 "<{}I".format(cls.__LEVEL_DATA_SIZE),
                 decrypted.read(cls.__LEVEL_DATA_SIZE << 2)))
+            endless = cls.__EndlessFlag(_struct.unpack(
+                "<{}I".format(cls.__ENDLESS_DATA_SIZE),
+                decrypted.read(cls.__ENDLESS_DATA_SIZE << 2)))
             items = cls.__ItemFlag(_struct.unpack(
                 "<{}I".format(cls.__ITEM_DATA_SIZE),
                 decrypted.read(cls.__ITEM_DATA_SIZE << 2)))
@@ -207,6 +223,7 @@ class Inventory(object):
                 cls.__sp = sp
                 cls._general = general
                 cls._level = level
+                cls._endless = endless
                 cls._item = items
                 cls._card = cards
                 cls._equip = equip
@@ -233,7 +250,7 @@ class Inventory(object):
     def get_sp(cls):
         u"""現在SP取得。
         """
-        return cls.__SP_LIMIT if _const.IS_SP_UNLIMITED else cls.__sp
+        return cls.__SP_LIMIT if cls.__IS_SP_UNLIMITED else cls.__sp
 
     @classmethod
     def add_sp(cls, value):

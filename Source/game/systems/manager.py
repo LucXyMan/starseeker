@@ -197,7 +197,6 @@ class __Manager(object):
             self._1p.puzzle.field.is_active or
             self._2p.puzzle.field.is_active
         ):
-            # TODO: 直す。
             if self._1p.is_lose:
                 self._1p.battle.group.destroy(
                     resource=self._2p.resource, detect=self._1p.flash,
@@ -343,7 +342,7 @@ class Endless(__Manager):
         u"""コンストラクタ。
         level: 2P側のレベル。
         """
-        _effects.Progress(_inventories.General.get_endless()+1)
+        _effects.Progress(_inventories.Endless.get_progress()+1)
         super(Endless, self).__init__()
         level = _levels.get_endless()
         number, self._rank = level.player
@@ -358,14 +357,14 @@ class Endless(__Manager):
         u"""勝利時処理。
         """
         super(Endless, self)._win()
-        progress = _inventories.General.get_endless()
-        _inventories.General.set_reached_endless(progress)
+        progress = _inventories.Endless.get_progress()
+        _inventories.Endless.set_reached(progress)
 
     def _lose(self):
         u"""敗北時処理。
         """
-        _inventories.General.set_endless(
-            _inventories.General.get_endless()-(_const.ENDLESS_INTRVAL+1))
+        _inventories.Endless.set_progress(
+            _inventories.Endless.get_progress()-(_const.ENDLESS_INTRVAL+1))
 
     def _reset(self):
         u"""リセット時処理。

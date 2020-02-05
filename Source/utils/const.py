@@ -11,7 +11,7 @@ This software is released under BSD license.
 # ---- System ----
 CAPTION = u"Star Seeker"
 COPYRIGHT = u"Copyright (c) 2019 Yukio Kuro"
-VERSION = u"1.1.1"
+VERSION = u"1.1.2"
 IS_MULTIPROCESSING = True
 BASE_SCREEN_SIZE = 320, 240
 MAIN_SCREEN_SIZE = 640, 480
@@ -118,7 +118,7 @@ ROB_CARD_SKILL = u"ロブカード#攻撃時に相手のカード強奪"
 PURIFY_SKILL = u"ピュリファイ#ジョーカーを削除"
 DOUBLE_SPELL_SKILL = u"ダブルスペル#連続でアルカナ使用"
 SOUL_EAT_SKILL = u"ソウルイート#サモン削除時にスター増加"
-REVERSE_SORCERY_SKILL = u"リバースソーサリー#ソーサリー効果逆転"
+REVERSE_SORCERY_SKILL = u"リバースソーサリー#ソーサリー効果反転"
 ANTI_SUMMONING_SKILL = u"アンチサモーニング#シールドでサモン封印"
 POISON_SUMMON_SKILL = u"ポイズンサモン#召喚時に毒を付与"
 FORCE_JOKER_SKILL = u"フォースジョーカー#*手札にジョーカー追加*"
@@ -170,13 +170,15 @@ ENCHANT_ABILITY = "enchant"
 PERSISTENCE_ABILITY = "persistence"
 PREVENTION_ABILITY = "prevention"
 ADDITION_ABILITY = "addition"
-# ---- Block Nmae ----
+# ---- Block Name ----
 BASIC_NAMES = "Normal#Solid#Adamant"
 STAR_NAMES = "Jupiter#Mars#Saturn#Venus#Mercury#Moon#Sun"
 SHARD_NAMES = "Life#Power#Protect#Speed"
 KEY_NAMES = "BronzeKey#SilverKey#GoldKey"
 CHEST_NAMES = "IronChest#BronzeChest#SilverChest#GoldChest"
 CARD_NAMES = "Summon#Sorcery#Shield#Support"
+LEVEL_UP_NAMES = "HardnessDown#LuckUp"
+BAD_LEVEL_UP_NAMES = "HardnessUp#LuckDown"
 ITEM_NAMES = str(
     STAR_NAMES+"#"+SHARD_NAMES+"#" +
     KEY_NAMES+"#"+CHEST_NAMES+"#"+CARD_NAMES)
@@ -225,11 +227,12 @@ MID_MALIGNANCY = LOW_MALIGNANCY << 1
 HIGH_MALIGNANCY = LOW_MALIGNANCY << 2
 WHITE_TARGET_NUMBER = 0
 RED_TARGET_NUMBER = 1
-ORANGE_TARGET_NUMBER = 5
-YELLOW_TARGET_NUMBER = 2
-GREEN_TARGET_NUMBER = 3
+ORANGE_TARGET_NUMBER = 2
+YELLOW_TARGET_NUMBER = 3
+GREEN_TARGET_NUMBER = 4
+CYAN_TARGET_NUMBER = 5
 BLUE_TARGET_NUMBER = 6
-PURPLE_TARGET_NUMBER = 4
+MAGENTA_TARGET_NUMBER = 7
 # ---- Piece ----
 SINGLE_PRUNING = 0
 HALF_PRUNING = 1
@@ -306,11 +309,5 @@ RAINBOW = (
     DARK_CYAN, DARK_BLUE, DARK_MAGENTA, DARK_MAGENTA)
 BURNING = RED, ORANGE, YELLOW, GREEN, YELLOW, ORANGE, RED, PURPLE
 # ---- Debug ----
-IS_CHEAT = False
 IS_OUTPUT = False
-IS_FALL_STOP = False
-IS_SPACE_MINIMAP = False
-IS_WINDOW_TRANSPARENT = False
-IS_SP_UNLIMITED = False
-IS_SYSTEM_TEST = False
 PIECE_TEST = ""

@@ -2,7 +2,7 @@
 
 ![main](https://raw.githubusercontent.com/LucXyMan/storage/master/starseeker/main.png)
 
-Version1.1.1
+Version1.1.2
 
 ## 概要
 RPG+カード+パズルゲーム。
@@ -84,6 +84,8 @@ C:\Users\userdir\AppData\Local\Star Seeker
 - 2019年11月12日: 1.0.0 ゲームを公開。
 - 2019年11月26日: 1.0.2 Windowsに対応。
 - 2019年12月26日: 1.0.3 サポートカード実装。
+- 2020年02月04日: 1.1.1 装備スキル実装。
+- 2020年02月06日: 1.1.2 レベルアップブロック実装。
 
 ## ライセンス
 [BSD 3-Clause License](/LICENSE)

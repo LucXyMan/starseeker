@@ -298,6 +298,12 @@ class Cell(_pygame.sprite.Sprite):
         """
         return -1
 
+    @property
+    def level_up_type(self):
+        u"""レベルアップ種類取得。
+        """
+        return -1
+
     # ------ Detection ------
     @property
     def is_changeable(self):

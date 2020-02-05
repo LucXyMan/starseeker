@@ -19,6 +19,9 @@ class System(object):
         "__core", "__drop_point", "__fall_progress", "__field", "__hold",
         "__is_completed", "__minimap", "__next", "__one_pieces", "__parent",
         "__piece", "__pressure", "__window")
+    __IS_FALL_STOP = False
+    __IS_SPACE_MINIMAP = False
+    __IS_WINDOW_TRANSPARENT = False
     __WINDOW_MIN_ALPHA = 0xB0
 
     def __init__(self, core, parent, level):
@@ -98,7 +101,7 @@ class System(object):
         self.__one_pieces = []
         self.__core = core
         self.__parent = parent
-        self.__next = __next.Next(level.deck, self.__core.id)
+        self.__next = __next.Next(level.deck, self.__parent, self.__core.id)
         self.__hold = __hold.Hold(self.__core)
         _, rank = level.player
         pattern = _FieldPattern(rank)
@@ -110,7 +113,7 @@ class System(object):
         __layouter.Game.set_field(self.__window, self.__core.id)
         self.__window.field = self.__field = _pieces.Field(pattern)
         self.__minimap = (
-            __huds.Space((0, 0, w, h)) if _const.IS_SPACE_MINIMAP else
+            __huds.Space((0, 0, w, h)) if self.__IS_SPACE_MINIMAP else
             __huds.Block((0, 0, w, h)))
         __layouter.Game.set_minimap(
             self.__minimap, self.__hold, self.__core.id)
@@ -131,7 +134,7 @@ class System(object):
             pattern = self.__next.forward(self.__parent.get_pattern(level_up))
         self.__piece = _pieces.Falling(pattern, self.__drop_point)
         self.__window.piece = self.__piece
-        self.update_window()
+        self.update()
 
     def skip(self):
         u"""ピーススキップ。
@@ -145,7 +148,7 @@ class System(object):
     def fall(self):
         u"""ピース落下処理。
         """
-        if not _const.IS_FALL_STOP:
+        if not self.__IS_FALL_STOP:
             if self.__fall_progress < _const.FRAME_RATE:
                 self.__fall_progress += 1
             else:
@@ -169,34 +172,24 @@ class System(object):
         self.__one_pieces = []
 
     # ---- Update ----
-    def update_parameter(self):
-        u"""ゲームパラメータの変動処理。
-        """
-        if not self.__is_completed:
-            self.__parent.hardness_down()
-            self.__parent.luck_up()
-        else:
-            self.__parent.hardness_up()
-            self.__parent.luck_down()
-
-    def update_window(self):
+    def update(self):
         u"""ウィンドウ、ミニマップを更新。
         """
         def __update_minimap():
             u"""ミニマップの更新。
             """
-            if _const.IS_SPACE_MINIMAP:
+            if self.__IS_SPACE_MINIMAP:
                 self.__minimap.write_blocks(False, self.__field.table)
             else:
                 self.__minimap.write_blocks(True, *self.__field.blocks)
                 self.__minimap.write_blocks(False, *self.__piece.blocks)
 
-        def __update_window():
+        def __update():
             u"""ウィンドウの値を更新。
             """
             self.__window.ghost = self.__piece.get_target(self.__field)
             self.__window.update_area()
-            if _const.IS_WINDOW_TRANSPARENT:
+            if self.__IS_WINDOW_TRANSPARENT:
                 diff = self.__field.highest+self.__window.difference
                 height = (
                     self.__field.height if
@@ -208,7 +201,7 @@ class System(object):
             else:
                 self.__window.image.set_alpha(None)
         __update_minimap()
-        __update_window()
+        __update()
 
     # ---- Property ----
     @property
@@ -237,6 +230,18 @@ class System(object):
         return self.__hold
 
     @property
+    def next(self):
+        u"""ネクスト取得。
+        """
+        return self.__next
+
+    @property
+    def parent(self):
+        u"""ペアレント取得。
+        """
+        return self.__parent
+
+    @property
     def field(self):
         u"""フィールド取得。
         """
@@ -249,18 +254,6 @@ class System(object):
         return self.__piece
 
     # ------ State ------
-    @property
-    def has_item(self):
-        u"""アイテム保有状態取得。
-        """
-        return self.__parent.has_item
-
-    @property
-    def has_joker(self):
-        u"""ジョーカー保有状態取得。
-        """
-        return self.__parent.has_joker
-
     @property
     def is_completed(self):
         u"""コンプリート状態取得。

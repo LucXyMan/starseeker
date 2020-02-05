@@ -183,7 +183,7 @@ class __Card(__block.Block):
     """
     _FRAME = 6
     _SCORE = _const.SINGLE_SCORE
-    _TARGET_COLOR = "blue"
+    _TARGET_COLOR = "cyan"
 
     @property
     def is_arcanum(self):
@@ -226,3 +226,51 @@ class Joker(__Card):
     _IMAGES = "black_card"
     _SMALL_IMAGE = "rect_9"
     _TARGET_COLOR = "red"
+
+
+# ---- Level Up ----
+class __LevelUp(__block.Block):
+    u"""レベル変化ブロック。
+    """
+    _FRAME = 4
+    _SCORE = _const.SINGLE_SCORE
+
+    @property
+    def level_up_type(self):
+        u"""レベルアップ種類取得。
+        """
+        return self._TYPE
+
+
+class HardnessUp(__LevelUp):
+    u"""硬度アップブロック。
+    """
+    _TYPE = 0
+    _IMAGES = "red_up_arrow"
+    _SMALL_IMAGE = "up_arrow_1"
+
+
+class HardnessDown(__LevelUp):
+    u"""硬度ダウンブロック。
+    """
+    _TYPE = 1
+    _IMAGES = "blue_down_arrow"
+    _SMALL_IMAGE = "down_arrow_5"
+    _TARGET_COLOR = "white"
+
+
+class LuckUp(__LevelUp):
+    u"""ラックアップブロック。
+    """
+    _TYPE = 2
+    _IMAGES = "green_up_arrow"
+    _SMALL_IMAGE = "up_arrow_4"
+    _TARGET_COLOR = "white"
+
+
+class LuckDown(__LevelUp):
+    u"""ラックダウンブロック。
+    """
+    _TYPE = 3
+    _IMAGES = "yellow_down_arrow"
+    _SMALL_IMAGE = "down_arrow_2"

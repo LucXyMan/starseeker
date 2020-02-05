@@ -287,6 +287,6 @@ def get():
             u"#アダマンタートル#不滅の金属の鎧#あらゆるステータス防止",
             118, __const.VERY_LOW_CORRECTION,
             ability=__equip.Ability(
-                __const.IRREGULAR_NAMES+"#"+__const.DEMON_NAMES+"#" +
-                __const.GHOST_NAMES+"###"),
+                __const.BAD_LEVEL_UP_NAMES+"#"+__const.IRREGULAR_NAMES+"#" +
+                __const.DEMON_NAMES+"#"+__const.GHOST_NAMES+"###"),
             keys=(u"ファヴニール",)))

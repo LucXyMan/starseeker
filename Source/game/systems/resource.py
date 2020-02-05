@@ -16,9 +16,9 @@ class Resource(object):
     取得スター・シャード・カードを管理。
     """
     __slots__ = (
-        "__cards", "__deck", "__equip", "__shards", "__skills", "__stars")
+        "__cards", "__deck", "__equip", "__level_ups", "__shards", "__skills",
+        "__stars")
     __STAR_LIMIT = _const.STAR_ENERGY*4
-    __NUMBER_OF_SHARD = 4
 
     def __init__(self, deck, stars=None, shards=None, cards=()):
         u"""リソース初期化。
@@ -27,8 +27,8 @@ class Resource(object):
         self.__deck = tuple(deck)
         default_stars = [0]*_const.NUMBER_OF_STAR
         self.__stars = list(default_stars if stars is None else stars)
-        default_shards = [0]*self.__NUMBER_OF_SHARD
-        self.__shards = list(default_shards if shards is None else shards)
+        self.__shards = list([0, 0, 0, 0] if shards is None else shards)
+        self.__level_ups = list([0, 0, 0, 0] if shards is None else shards)
         self.__cards = list(cards)
 
     def __has_skill(self, skill):
@@ -98,13 +98,13 @@ class Resource(object):
         def __extract_shard():
             u"""ピースによるシャード増加。
             """
-            for i, plus in enumerate(tuple(sum(
+            for i, plus in enumerate((sum(
                 1 for block in one_piece if block.shard_type == type_
             ) for type_ in range(4))):
                 self.__shards[i] += plus
 
         def __extract_card():
-            u"""ピースからカード番号を取得。
+            u"""ピースからカード番号取得。
             """
             self.__cards.extend(
                 block.state for block in one_piece if block.is_arcanum)
@@ -124,6 +124,14 @@ class Resource(object):
                     self.__shards = map(lambda x: x+1*i, self.__shards)
                     self.__cards.extend(_random.sample(self.__deck, i))
 
+        def __extract_level_up():
+            u"""レベルアップ取得。
+            """
+            for i, plus in enumerate((sum(
+                1 for block in one_piece if block.level_up_type == type_
+            ) for type_ in range(4))):
+                self.__level_ups[i] += plus
+
         def __addict():
             u"""毒取得によるスター減少。
             """
@@ -135,16 +143,24 @@ class Resource(object):
                 self.disappear(poisons)
         __extract_star()
         __extract_shard()
+        __extract_level_up()
         __extract_card()
         __excavate()
         __addict()
 
     # ---- Release ----
-    def release(self, type_):
+    def release_shard(self, type_):
         u"""シャード開放。
         """
         result = self.__shards[type_]
         self.__shards[type_] = 0
+        return result
+
+    def release_level_up(self, type_):
+        u"""レベルアップ開放。
+        """
+        result = self.__level_ups[type_]
+        self.__level_ups[type_] = 0
         return result
 
     def draw(self):
@@ -227,6 +243,12 @@ class Resource(object):
         u"""シャード取得。
         """
         return tuple(self.__shards)
+
+    @property
+    def level_ups(self):
+        u"""レベルアップ取得。
+        """
+        return tuple(self.__level_ups)
 
     @property
     def total(self):

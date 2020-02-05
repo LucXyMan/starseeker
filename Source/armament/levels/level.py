@@ -202,10 +202,10 @@ def get_endless():
             result.append(__random.choice(equip).number if equip else 0)
         return tuple(result)
     global __deck, __equip
-    progress = __inventories.General.get_endless()+1
+    progress = __inventories.Endless.get_progress()+1
     progress = (
         progress if progress < _const.ENDLESS_LIMIT else _const.ENDLESS_LIMIT)
-    __inventories.General.set_endless(progress)
+    __inventories.Endless.set_progress(progress)
     is_boss_battle = _const.ENDLESS_LIMIT <= progress
     player = __random.randint(
         0, _const.PLEYERS if is_boss_battle else _const.PLEYERS-1)

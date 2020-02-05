@@ -111,6 +111,34 @@ class String(__pygame.sprite.DirtySprite):
         self.__is_short = bool(value)
 
 
+class Block(String):
+    u"""ブロック情報文字列。
+    """
+    def __init__(self, pos, piece, groups=None):
+        u"""コンストラクタ。
+        """
+        self._piece = piece
+        self._old = -1
+        self._param = self._dest = 0
+        super(Block, self).__init__(
+            pos, "", _const.SYSTEM_CHAR_SIZE, self._COLOR, True,
+            groups)
+
+    def update(self):
+        u"""文字列の更新。
+        """
+        def __fluctuate():
+            u"""値の変動。
+            """
+            if self._param < self._dest:
+                self._param += 1
+            elif self._param > self._dest:
+                self._param -= 1
+        self._set_dest()
+        __fluctuate()
+        self.string = self._get_string()
+
+
 class Notice(String):
     u"""ゲーム情報表示。
     """

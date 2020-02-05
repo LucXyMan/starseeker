@@ -16,10 +16,11 @@ def init(container):
     import utils.image as __image
     global __blocks
 
-    def __target_proc():
+    # ---- Special ----
+    def __process_target():
         u"""ターゲット画像作成。
         """
-        def __edge_proc(color):
+        def __process_edge(color):
             u"""ブロックエッジ画像加工。
             """
             def __create_base_edge():
@@ -69,17 +70,38 @@ def init(container):
             __create_multi_edge()
         source = __image.load(container.get("target.png"))
         for i, name in enumerate((
-            "white_target", "red_target", "yellow_target", "green_target",
-            "magenta_target", "orange_target", "blue_target"
+            "white", "red", "yellow", "green",
+            "magenta", "orange", "cyan", "blue"
         )):
-            __blocks[name] = __image.get_segment(
+            __blocks[name+"_target"] = __image.get_segment(
                 __image.get_another_color(source, i, 8), (4, 1))
         for color in (
-            "white", "red", "yellow", "green", "magenta", "orange", "blue"
+            "white", "red", "yellow", "green",
+            "magenta", "orange", "cyan", "blue"
         ):
-            __edge_proc(color)
+            __process_edge(color)
 
-    def __basic_proc():
+    def __process_next():
+        u"""ネクスト表示で使用する画像加工。
+        """
+        source = __image.load(container.get("small.png"))
+        for i in range(10):
+            images = __image.get_segment(
+                __image.get_another_color(source, i, 8), (4, 2), (8, 8))
+            for j, name in enumerate((
+                "square", "circle", "diamond", "star",
+                "rect", "!", "?", "arrow"
+            )):
+                if name == "arrow":
+                    image = images[j]
+                    flipped = __pygame.transform.flip(image, False, True)
+                    __blocks["up_"+name+"_"+str(i)] = image
+                    __blocks["down_"+name+"_"+str(i)] = flipped
+                else:
+                    __blocks[name+"_"+str(i)] = images[j]
+
+    # ---- Basic ----
+    def __process_basic():
         u"""基本ブロック画像加工。
         """
         source = __image.load(container.get("basic.png"))
@@ -93,7 +115,8 @@ def init(container):
             lambda x, y: x+y, (image[::2] for image in images[1:8:2]))
         __blocks["adamant"] = reduce(lambda x, y: x+y, images[9:16:2])
 
-    def __star_proc():
+    # ---- Item ----
+    def __process_star():
         u"""スター画像加工。
         """
         source = __image.load(container.get("star.png"))
@@ -103,67 +126,7 @@ def init(container):
             __blocks[name] = __image.get_segment(
                 __image.get_another_color(source, i), (4, 3))
 
-    def __daemon_proc():
-        u"""精霊ブロック画像加工。
-        """
-        source = __image.load(container.get("daemon.png"))
-        images = [__image.get_another_color(source, i) for i in range(9)]
-        _images = __image.get_segment(images[3], (4, 2))
-        __blocks["gargoyle"] = _images[0:1]
-        for name, image in zip((
-            "ice_ghost", "poison_ghost", "fire_ghost"
-        ), images[:3]):
-            _images = __image.get_segment(image, (4, 2))
-            __blocks[name] = _images[4:8]
-        for name, image in zip((
-            "maxwell", "eater", "arch_demon", "demon", "king_demon"
-        ), images[4:]):
-            _images = __image.get_segment(image, (4, 2))
-            __blocks[name] = _images[0:4]
-
-    def __slime_proc():
-        u"""スライム・きのこ画像加工。
-        """
-        source = __image.load(container.get("slime.png"))
-        for i, name, in enumerate((
-            "slime", "large_matango", "tired", "matango"
-        )):
-            images = __image.get_segment(
-                __image.get_another_color(source, i), (4, 2))
-            __blocks[name] = (
-                images[4:] if i in (1, 3) else images[3:4] if i == 2 else
-                images[1:2]+images[:3])
-
-    def __nature_proc():
-        u"""水系画像加工。
-        """
-        source = __image.load(container.get("nature.png"))
-        for i, name in enumerate((
-            "magma", "ice", "", "Corrosion", "acid", "poison", "water"
-        )):
-            if name:
-                images = __image.get_segment(
-                    __image.get_another_color(source, i), (4, 2))
-                __blocks[name] = images[4:] if i == 1 else images[:4]
-
-    def __stone_proc():
-        u"""石化画像加工。
-        """
-        source = __image.load(container.get("stone.png"))
-        for i, name in enumerate(("chocolate", "stone")):
-            __blocks[name] = __image.get_segment(
-                __image.get_another_color(source, i, 8), (4, 4))
-
-    def __other_proc():
-        u"""その他画像加工。
-        """
-        source = __image.load(container.get("other.png"))
-        for i, name in enumerate(("rip", "ruin")):
-            images = __image.get_segment(
-                __image.get_another_color(source, i), (4, 2))
-            __blocks[name] = images[i],
-
-    def __shards_proc():
+    def __process_shards():
         u"""欠片画像加工。
         """
         source = __image.load(container.get("shards.png"))
@@ -174,19 +137,7 @@ def init(container):
                 __image.get_another_color(source, i), (4, 2))
             __blocks[name] = images[4:]
 
-    def __next_proc():
-        u"""ネクスト表示で使用する画像加工。
-        """
-        source = __image.load(container.get("small.png"))
-        for i in range(10):
-            images = __image.get_segment(
-                __image.get_another_color(source, i, 8), (4, 2), (8, 8))
-            for j, name in enumerate((
-                "square", "circle", "diamond", "star", "rect", "!", "?"
-            )):
-                __blocks[name+"_"+str(i)] = images[j]
-
-    def __icon_proc():
+    def __process_icon():
         u"""アイコン画像を使用するブロック画像加工。
         """
         import icon as _icon
@@ -211,11 +162,87 @@ def init(container):
                     __pygame.transform.flip(
                         _icon.get(i << 8 | color), True, False
                     ) for i in range(4, 2, -1)])
+
+    def __process_arrow():
+        u"""矢印ブロック画像加工。
+        """
+        source = __image.load(container.get("arrow.png"))
+        for i, name in enumerate((
+            "red", "yellow", "magenta", "blue", "green"
+        )):
+            another_color = __image.get_another_color(source, i, 8)
+            images = __image.get_segment(another_color, (4, 2))
+            __blocks[name+"_up_arrow"] = images[:4]
+            __blocks[name+"_down_arrow"] = images[4:]
+
+    # ---- Monster ----
+    def __process_daemon():
+        u"""精霊ブロック画像加工。
+        """
+        source = __image.load(container.get("daemon.png"))
+        images = [__image.get_another_color(source, i) for i in range(9)]
+        _images = __image.get_segment(images[3], (4, 2))
+        __blocks["gargoyle"] = _images[0:1]
+        for name, image in zip((
+            "ice_ghost", "poison_ghost", "fire_ghost"
+        ), images[:3]):
+            _images = __image.get_segment(image, (4, 2))
+            __blocks[name] = _images[4:8]
+        for name, image in zip((
+            "maxwell", "eater", "arch_demon", "demon", "king_demon"
+        ), images[4:]):
+            _images = __image.get_segment(image, (4, 2))
+            __blocks[name] = _images[0:4]
+
+    def __process_slime():
+        u"""スライム・きのこ画像加工。
+        """
+        source = __image.load(container.get("slime.png"))
+        for i, name, in enumerate((
+            "slime", "large_matango", "tired", "matango"
+        )):
+            images = __image.get_segment(
+                __image.get_another_color(source, i), (4, 2))
+            __blocks[name] = (
+                images[4:] if i in (1, 3) else images[3:4] if i == 2 else
+                images[1:2]+images[:3])
+
+    # ---- Irregular ----
+    def __process_nature():
+        u"""水系画像加工。
+        """
+        source = __image.load(container.get("nature.png"))
+        for i, name in enumerate((
+            "magma", "ice", "", "Corrosion", "acid", "poison", "water"
+        )):
+            if name:
+                images = __image.get_segment(
+                    __image.get_another_color(source, i), (4, 2))
+                __blocks[name] = images[4:] if i == 1 else images[:4]
+
+    def __process_stone():
+        u"""石化画像加工。
+        """
+        source = __image.load(container.get("stone.png"))
+        for i, name in enumerate(("chocolate", "stone")):
+            __blocks[name] = __image.get_segment(
+                __image.get_another_color(source, i, 8), (4, 4))
+
+    def __process_others():
+        u"""その他画像加工。
+        """
+        source = __image.load(container.get("other.png"))
+        for i, name in enumerate(("rip", "ruin")):
+            images = __image.get_segment(
+                __image.get_another_color(source, i), (4, 2))
+            __blocks[name] = images[i],
     __blocks = {"dummy": (__image.get_clear(__pygame.Surface((16, 16))),)}
     for func in (
-        __target_proc, __basic_proc, __star_proc, __daemon_proc,
-        __slime_proc, __nature_proc, __stone_proc, __other_proc,
-        __shards_proc, __next_proc, __icon_proc,
+        __process_target, __process_next,
+        __process_basic,
+        __process_star, __process_shards, __process_icon, __process_arrow,
+        __process_daemon, __process_slime,
+        __process_nature, __process_stone, __process_others
     ):
         func()
 

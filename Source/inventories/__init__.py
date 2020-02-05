@@ -27,6 +27,7 @@ forward_time = __inventory.Inventory.forward_time
 # ---- Interface ----
 General = __various.General
 Level = __various.Level
+Endless = __various.Endless
 Item = __collections.Item
 Card = __collections.Card
 Equip = __equips.Equip

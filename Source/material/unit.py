@@ -15,7 +15,7 @@ def init(container):
     import utils.image as __image
     global __units
 
-    def __player_processing():
+    def __process_player():
         u"""プレイヤー画像加工。
         """
         source = __image.load(container.get("players.png"))
@@ -35,7 +35,7 @@ def init(container):
             __image.get_another_color(source, 8), (1, 1), (72, 96), (0, 128))
         __units["nebula"] = (image,)*2
 
-    def __creature_processing():
+    def __process_creature():
         u"""クリーチャー画像加工。
         """
         source = __image.load(container.get("creatures.png"))
@@ -64,7 +64,7 @@ def init(container):
             dragon, = __image.get_segment(other, (1, 1), (64, 64), (0, 176))
             __units["dragon"+"_"+str(i)] = dragon
     __units = {}
-    for func in (__player_processing, __creature_processing):
+    for func in (__process_player, __process_creature):
         func()
 
 

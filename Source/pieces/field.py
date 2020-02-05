@@ -288,8 +288,7 @@ class Field(__piece.Piece):
         """
         target_points = []
         names = (
-            _const.BASIC_NAMES+"#" +
-            _const.ITEM_NAMES+"#" +
+            _const.BASIC_NAMES+"#"+_const.ITEM_NAMES+"#" +
             _const.SLIME_NAMES)
         for x in range(self.width-1):
             for y in range(self.height-1):

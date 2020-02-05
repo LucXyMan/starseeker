@@ -88,27 +88,27 @@ class Normal(Basic):
     u"""ノーマルブロック。
     一回のクラックで破壊できる。
     """
-    _SCORE = _const.SINGLE_SCORE
     _IMAGES = "normal"
-    _SMALL_IMAGE = "square_0"
     _MAX_HP = 0
+    _SCORE = _const.SINGLE_SCORE
+    _SMALL_IMAGE = "square_0"
 
 
 class Solid(Basic):
     u"""ソリッドブロック。
     二回のクラックで破壊できる。
     """
-    _SCORE = _const.HALF_SCORE
     _IMAGES = "solid"
-    _SMALL_IMAGE = "square_9"
     _MAX_HP = 1
+    _SCORE = _const.HALF_SCORE
+    _SMALL_IMAGE = "square_9"
 
 
 class Adamant(Basic):
     u"""アダマントブロック。
     四回のクラックで破壊できる。
     """
-    _SCORE = _const.QUARTER_SCORE
     _IMAGES = "adamant"
-    _SMALL_IMAGE = "square_8"
     _MAX_HP = 3
+    _SCORE = _const.QUARTER_SCORE
+    _SMALL_IMAGE = "square_8"

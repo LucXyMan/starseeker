@@ -249,16 +249,16 @@ def init():
             __const.POISON_CHANGE),
         __support.Enchant(
             u"ラスティソード###"
-            u"シャードをアシッドに###"
-            u"Acid##"+__const.SHARD_NAMES),
+            u"アシッド攻撃追加###" +
+            __const.ACID_CHANGE),
         __support.Enchant(
-            u"フリーズスター###"
-            u"スターをアイスに###"
-            u"Ice##"+__const.STAR_NAMES),
+            u"ホワイトスノウ###"
+            u"アイス攻撃追加###" +
+            __const.ICE_CHANGE),
         __support.Enchant(
             u"フレイムオーラ###"
-            u"カードをマグマに###"
-            u"Magma##"+__const.CARD_NAMES),
+            u"マグマ攻撃追加###" +
+            __const.MAGMA_CHANGE),
         __support.Enchant(
             u"ファンガス###"
             u"キノコ攻撃追加###" +

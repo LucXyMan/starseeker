@@ -14,7 +14,7 @@ def init(container):
     """
     global __items
 
-    def __icon_proc():
+    def __process_icon():
         u"""アイテム画像加工。
         """
         import utils.image as __image
@@ -24,7 +24,7 @@ def init(container):
             part = __image.get_segment(surf, (16, height))
             __items.append([part[j*16:j*16+16] for j in range(height)])
     __items = []
-    __icon_proc()
+    __process_icon()
 
 
 def get(number):

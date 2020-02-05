@@ -302,9 +302,9 @@ def init():
                 u"##ライトニングフライ##"
                 u"幸運の金バエ#"+__general.get_skill_description(
                     _const.PHANTOM_THIEF_SKILL),
-                (11, 49), (4, 3), VERY_LOW_POWER, ability=__data.Ability(
-                    _const.ADDITION_ABILITY+"###" +
-                    __general.get_skill_names(_const.PHANTOM_THIEF_SKILL))),
+                (11, 49), (4, 3), LOW_POWER, ability=__data.Ability(
+                        _const.PERSISTENCE_ABILITY+"###LuckUp##" +
+                        _const.BASIC_NAMES, 0b111)),
             __data.Summon(
                 u"##slime_10##"+_const.ALCHMIC_TRIBE +
                 u"##ソーダスライム##"

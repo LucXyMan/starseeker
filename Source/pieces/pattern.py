@@ -164,8 +164,9 @@ class Pattern(object):
                 _const.ORANGE_TARGET_NUMBER if color == "orange" else
                 _const.YELLOW_TARGET_NUMBER if color == "yellow" else
                 _const.GREEN_TARGET_NUMBER if color == "green" else
+                _const.CYAN_TARGET_NUMBER if color == "cyan" else
                 _const.BLUE_TARGET_NUMBER if color == "blue" else
-                _const.PURPLE_TARGET_NUMBER if color == "magenta" else
+                _const.MAGENTA_TARGET_NUMBER if color == "magenta" else
                 _const.WHITE_TARGET_NUMBER)
         return Pattern((self.width, self.height), (((x, y), (
             "Target", __map_number(

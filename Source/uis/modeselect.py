@@ -143,8 +143,8 @@ class ModeSelect(__ui.UI):
             u"""エンドレス説明文取得。
             """
             base = u"{1}:ランダムに連戦"
-            endless = _inventories.General.get_endless()
-            reached = _inventories.General.get_reached_endless()
+            endless = _inventories.Endless.get_progress()
+            reached = _inventories.Endless.get_reached()
             max_level = reached if reached < _const.ENDLESS_LIMIT else u"??"
             max_ = u"/最大★:{}".format(max_level) if reached else u""
             if endless:

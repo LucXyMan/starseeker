@@ -15,20 +15,14 @@ class General(__inventory.Inventory):
     u"""汎用パラメータ管理。
     """
     __slots__ = ()
-
-    # ---- Detection ----
-    @classmethod
-    def is_cleared_endless(cls):
-        u"""エンドレスクリア判定。
-        """
-        return _const.ENDLESS_LIMIT <= cls.get_reached_endless()
+    __PLAYER_SLOT = 0
 
     # ---- Getter ----
     @classmethod
     def get_player(cls):
         u"""現在プレイヤー取得。
         """
-        return cls._general.get(0)
+        return cls._general.get(cls.__PLAYER_SLOT)
 
     @classmethod
     def get_learnable(cls):
@@ -37,22 +31,10 @@ class General(__inventory.Inventory):
         return cls._players[cls.get_player()].learnable
 
     @classmethod
-    def get_endless(cls):
-        u"""エンドレス進行状態取得。
-        """
-        return cls._general.get(1)
-
-    @classmethod
-    def get_reached_endless(cls):
-        u"""エンドレス到達地点取得。
-        """
-        return cls._general.get(2)
-
-    @classmethod
     def get_speed(cls):
-        u"""移動速度取得。
+        u"""カーソル移動速度取得。
         """
-        return cls._general.get(3)
+        return cls._general.get(cls._SPEED_SLOT)
 
     @classmethod
     def get_value(cls):
@@ -65,33 +47,15 @@ class General(__inventory.Inventory):
     def set_player(cls, value):
         u"""現在プレイヤー設定。
         """
-        cls._general.set(0, (
+        cls._general.set(cls.__PLAYER_SLOT, (
             0 if value < 0 else value if value < _const.PLEYERS-1 else
             _const.PLEYERS-1))
 
     @classmethod
-    def set_endless(cls, value):
-        u"""エンドレス進行状態設定。
-        """
-        cls._general.set(1, (
-            0 if value < 0 else value if value < _const.ENDLESS_LIMIT else
-            _const.ENDLESS_LIMIT))
-
-    @classmethod
-    def set_reached_endless(cls, value):
-        u"""エンドレス到達地点設定。
-        """
-        value = (
-            0 if value < 0 else value if value < _const.ENDLESS_LIMIT else
-            _const.ENDLESS_LIMIT)
-        if cls.get_reached_endless() < value:
-            cls._general.set(2, value)
-
-    @classmethod
     def set_speed(cls, value):
-        u"""移動速度設定。
+        u"""カーソル移動速度設定。
         """
-        cls._general.set(3, value)
+        cls._general.set(cls._SPEED_SLOT, value)
 
 
 class Level(__inventory.Inventory):
@@ -112,15 +76,55 @@ class Level(__inventory.Inventory):
         """
         return cls._level.bits
 
-    @classmethod
-    def get_value(cls):
-        u"""数値を取得。
-        """
-        return sum(cls._level.raw)
-
     # ---- Setter ----
     @classmethod
     def on(cls, slot):
         u"""位置slotのクリア状態設定。
         """
         cls._level.on(slot)
+
+
+class Endless(__inventory.Inventory):
+    u"""エンドレス管理。
+    """
+    __PROGRESS_SLOT = 0
+    __REACHED_SLOT = 1
+
+    # ---- Detection ----
+    @classmethod
+    def is_cleared(cls):
+        u"""クリア判定。
+        """
+        return _const.ENDLESS_LIMIT <= cls.get_reached()
+
+    # ---- Getter ----
+    @classmethod
+    def get_progress(cls):
+        u"""進行状態取得。
+        """
+        return cls._endless.get(cls.__PROGRESS_SLOT)
+
+    @classmethod
+    def get_reached(cls):
+        u"""到達地点取得。
+        """
+        return cls._endless.get(cls.__REACHED_SLOT)
+
+    # ---- Setter ----
+    @classmethod
+    def set_progress(cls, value):
+        u"""進行状態設定。
+        """
+        cls._endless.set(cls.__PROGRESS_SLOT, (
+            0 if value < 0 else value if value < _const.ENDLESS_LIMIT else
+            _const.ENDLESS_LIMIT))
+
+    @classmethod
+    def set_reached(cls, value):
+        u"""到達地点設定。
+        """
+        value = (
+            0 if value < 0 else value if value < _const.ENDLESS_LIMIT else
+            _const.ENDLESS_LIMIT)
+        if cls.get_reached() < value:
+            cls._endless.set(cls.__REACHED_SLOT, value)

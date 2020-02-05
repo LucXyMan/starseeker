@@ -32,6 +32,8 @@ def get(key):
             __item.Life, __item.Power, __item.Protect, __item.Speed,
             __item.Summon, __item.Sorcery, __item.Support, __item.Shield,
             __item.Joker,
+            __item.HardnessUp, __item.HardnessDown,
+            __item.LuckUp, __item.LuckDown,
             __monster.Slime, __monster.Tired,
             __monster.Matango, __monster.LargeMatango,
             __monster.BlockEater, __monster.BlockDemon,

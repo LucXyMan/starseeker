@@ -133,7 +133,7 @@ class Hold(object):
                     self.__keep.append(puzzle.piece.pattern)
                     __accessory_effect()
                     puzzle.piece.pattern = self.__keep.pop()
-                    puzzle.update_window()
+                    puzzle.update()
                     __update()
 
     def exchange(self, other):

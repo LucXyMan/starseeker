@@ -53,7 +53,7 @@ class Result(_ui.Controllable):
         for card in deck:
             window.append(__icon.Reward((0, 0), _collectible.get(card), ()))
         window.is_light = window.is_active = True
-        if _inventories.General.get_endless() % _const.ENDLESS_INTRVAL == 0:
+        if _inventories.Endless.get_progress() % _const.ENDLESS_INTRVAL == 0:
             reward = __levels.get_reward()
             if reward != 0:
                 _inventories.Item.on(reward-1)

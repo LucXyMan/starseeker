@@ -230,7 +230,7 @@ class Equip(object):
             u"""条件判定。
             """
             if seal == -1:
-                return not _inventories.General.is_cleared_endless()
+                return not _inventories.Endless.is_cleared()
             elif seal == -2:
                 return not _inventories.Item.is_completion()
             elif seal == -3:

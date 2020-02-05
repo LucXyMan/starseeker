@@ -20,6 +20,7 @@ class System(object):
         "__id", "__is_pause_available", "__is_paused", "__is_playing",
         "__is_transparent", "__phase", "__pressure", "__puzzle", "__resource",
         "__thinker", "__turn")
+    __IS_TEST = False
     __TURN_OVER = 0b11111111
 
     def __init__(self, level, parent, id_):
@@ -58,7 +59,7 @@ class System(object):
             import puzzle as __puzzle
             self.__puzzle = __puzzle.System(self, parent, level)
             self.__puzzle.forward(4 if self.__id == 0 else 3, False)
-            self.__puzzle.update_window()
+            self.__puzzle.update()
 
         def __set_battle():
             u"""戦闘システム設定。
@@ -74,7 +75,7 @@ class System(object):
         def __set_test():
             u"""テスト用設定。
             """
-            if _const.IS_SYSTEM_TEST:
+            if self.__IS_TEST:
                 if self.__id == 0:
                     for i in range(_const.NUMBER_OF_STAR):
                         self.__resource.increase(i, 0)

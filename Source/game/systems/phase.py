@@ -122,12 +122,11 @@ class ThrowingPhase(__ControlPhase):
                     battle.player.enhance(type_-1, plus)
                     battle.group.enhance(type_-1, plus)
                 import random as __random
-                resource = self._system.resource
                 for type_ in range(len(resource.shards)):
                     skills = (
                         _const.LIFE_BOOST_SKILL, _const.MIGHTY_SKILL,
                         _const.TOUGHNESS_SKILL, _const.SPEEDSTER_SKILL)
-                    plus = resource.release(type_)
+                    plus = resource.release_shard(type_)
                     if 0 < plus:
                         has_skill = self._system.flash(skills[type_])
                         plus = plus << 1 if has_skill else plus
@@ -135,6 +134,13 @@ class ThrowingPhase(__ControlPhase):
                             __recovery()
                         else:
                             __enhence()
+
+            def __apply_level_up():
+                u"""レベルアップ効果適用。
+                """
+                puzzle.next.level_up(
+                    resource.release_level_up(i) for
+                    i in range(len(resource.level_ups)))
 
             def __attack(rival):
                 u"""プレイヤーとモンスターグループのチャージと攻撃。
@@ -228,7 +234,9 @@ class ThrowingPhase(__ControlPhase):
                             self._system.puzzle.field.replace(prm, (new, old))
                         ):
                             creature.flash("skill")
+            resource = self._system.resource
             __apply_shard()
+            __apply_level_up()
             __attack(rival)
             __effect_joker()
             self._system.forward()
@@ -237,7 +245,6 @@ class ThrowingPhase(__ControlPhase):
             __effect_card()
             __effect_creature()
             puzzle.field.turn()
-            puzzle.update_parameter()
             puzzle.is_completed = False
             self._system.cmds = ""
             self._system.set_thrown()
@@ -299,7 +306,7 @@ class ThrowingPhase(__ControlPhase):
                 puzzle.piece.drop(puzzle.field)
                 is_moved = is_downed = True
             if is_moved:
-                puzzle.update_window()
+                puzzle.update()
             if is_downed:
                 puzzle.clear_fall()
 
@@ -308,10 +315,10 @@ class ThrowingPhase(__ControlPhase):
             """
             if cmd == _const.DECISION_COMMAND:
                 puzzle.piece.rotate(puzzle.field, True)
-                puzzle.update_window()
+                puzzle.update()
             elif cmd == _const.REMOVE_COMMAND:
                 puzzle.piece.rotate(puzzle.field, False)
-                puzzle.update_window()
+                puzzle.update()
 
         def __run_summon_command():
             u"""召喚コマンド。
@@ -409,7 +416,7 @@ class ThrownPhase(__Phase):
         puzzle = self._system.puzzle
         puzzle.forward()
         __press()
-        puzzle.update_window()
+        puzzle.update()
         __game_over_test()
         puzzle.hold.is_captured = False
         self._system.battle.turn()

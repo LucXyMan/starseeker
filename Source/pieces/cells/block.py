@@ -74,6 +74,7 @@ class Block(__cell.Cell):
                 _const.ORANGE if cls._TARGET_COLOR == "orange" else
                 _const.YELLOW if cls._TARGET_COLOR == "yellow" else
                 _const.GREEN if cls._TARGET_COLOR == "green" else
+                _const.CYAN if cls._TARGET_COLOR == "cyan" else
                 _const.BLUE if cls._TARGET_COLOR == "blue" else
                 _const.MAGENTA if cls._TARGET_COLOR == "magenta" else
                 _const.WHITE)
@@ -385,8 +386,9 @@ class Target(Block):
                 "orange" if self._state == _const.ORANGE_TARGET_NUMBER else
                 "yellow" if self._state == _const.YELLOW_TARGET_NUMBER else
                 "green" if self._state == _const.GREEN_TARGET_NUMBER else
+                "cyan" if self._state == _const.CYAN_TARGET_NUMBER else
                 "blue" if self._state == _const.BLUE_TARGET_NUMBER else
-                "magenta" if self._state == _const.PURPLE_TARGET_NUMBER else
+                "magenta" if self._state == _const.MAGENTA_TARGET_NUMBER else
                 "white")
         return self._target_color
 

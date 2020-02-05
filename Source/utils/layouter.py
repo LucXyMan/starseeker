@@ -229,13 +229,22 @@ class Game(_Layouter):
                 y += card.rect.height
 
     @classmethod
-    def set_block_level(cls, strings):
-        u"""ブロックレベル位置設定。
+    def set_piece_level(cls, string):
+        u"""ピースレベル位置設定。
+        """
+        string.rect.midbottom = cls._screen.midbottom
+
+    @classmethod
+    def set_parameter(cls, strings, base_string, id_):
+        u"""硬度・幸運位置設定。
         """
         strings = tuple(strings)
-        strings[1].rect.midbottom = cls._screen.midbottom
-        strings[0].rect.midright = strings[1].rect.midleft
-        strings[2].rect.midleft = strings[1].rect.midright
+        if id_ == 0:
+            strings[1].rect.midright = base_string.rect.midleft
+            strings[0].rect.midright = strings[1].rect.midleft
+        else:
+            strings[0].rect.midleft = base_string.rect.midright
+            strings[1].rect.midleft = strings[0].rect.midright
 
     # ---- Unit ----
     @classmethod

@@ -18,14 +18,9 @@ class Parent(object):
     親パターンの生成と変化を管理する。
     """
     __slots__ = (
-        "__consumed", "__basics", "__elm_lot", "__hardness", "__item_lot",
-        "__item_state", "__levels", "__luck", "__piece", "__piece_lot",
-        "__srd_lot", "__release", "__joker_lot", "__window")
-    __HARDNESS_LIMIT = 200
-    __LEVEL_UP_STEP = 1
-    __LUCK_LIMIT = 100
-    __LUCK_MINUS = 8
-    __TREASURE_HIT = 0.01
+        "__consumed", "__basics", "__elm_lot", "__item_lot", "__item_state",
+        "__levels", "__lv_lot", "__piece", "__piece_level_string",
+        "__piece_lot", "__srd_lot", "__release", "__joker_lot", "__window")
     __ITEM_NAMES = (
         _const.STAR_NAMES+"#"+_const.SHARD_NAMES+"#" +
         _const.KEY_NAMES+"#"+_const.CHEST_NAMES)
@@ -93,82 +88,22 @@ class Parent(object):
                 self.__level = int(value if value < limit else limit)
 
         # ---- String ----
-        class _BlockString(__string.String):
-            u"""ブロック情報文字列。
-            """
-            def __init__(self, pos, parent, groups=None):
-                u"""コンストラクタ。
-                """
-                self._parent = parent
-                self._old = -1
-                self._param = self._dest = 0
-                super(_BlockString, self).__init__(
-                    pos, "", _const.SYSTEM_CHAR_SIZE, self._COLOR, True,
-                    groups)
-
-            def update(self):
-                u"""文字列の更新。
-                """
-                def __fluctuate():
-                    u"""値の変動。
-                    """
-                    if self._param < self._dest:
-                        self._param += 1
-                    elif self._param > self._dest:
-                        self._param -= 1
-                self._set_dest()
-                __fluctuate()
-                self.string = self._get_string()
-
-        class __LevelString(_BlockString):
-            u"""レベル数値文字列。
-            """
-            _COLOR = _const.MAGENTA+"#"+_const.YELLOW+"#"+_const.DARK_MAGENTA
-
-            def _get_string(self):
-                u"""文字列取得。
-                """
-                return "PL{0:0>2}".format(self._param)
-
-            def _set_dest(self):
-                u"""目的の値を設定。
-                """
-                if self._old != self._parent.level:
-                    self._old = self._dest = self._parent.level
-
-        class __HardnessString(_BlockString):
-            u"""硬度数値文字列。
+        class __PieceLevel(__string .Block):
+            u"""ピースレベル文字列。
             """
             _COLOR = _const.YELLOW+"#"+_const.ORANGE+"#"+_const.DARK_YELLOW
 
             def _get_string(self):
                 u"""文字列取得。
                 """
-                return "H{0:0>3}".format(self._param >> 1)
+                return "P{0:0>2}".format(self._param)
 
             def _set_dest(self):
                 u"""目的の値を設定。
                 """
-                if self._old != self._parent.hardness:
-                    self._dest = self._parent.hardness
-                    self._old = self._parent.hardness
+                if self._old != self._piece.level:
+                    self._old = self._dest = self._piece.level
 
-        class __LuckString(_BlockString):
-            u"""幸運数値文字列。
-            """
-            _COLOR = _const.CYAN+"#"+_const.YELLOW+"#"+_const.DARK_CYAN
-
-            def _get_string(self):
-                u"""文字列取得。
-                """
-                return "L{0:0>3}".format(self._param)
-
-            def _set_dest(self):
-                u"""目的の値を設定。
-                """
-                if self._old != self._parent.luck:
-                    self._dest = self._parent.luck
-                    self._old = self._parent.luck
         rect = _pygame.Rect((0, 0), _const.NEXT_WINDOW_SIZE)
         self.__basics = __BasicArray()
         self.__levels = _LevelArray()
@@ -176,11 +111,8 @@ class Parent(object):
         self.__window.rect.topleft = rect.topleft
         __layouter.Game.set_parent(self.__window)
         self.__consumed = 0
-        self.__luck = 0
-        self.__hardness = 0
-        strings = __LevelString, __HardnessString, __LuckString
-        __layouter.Game.set_block_level(
-            String((0, 0), self) for String in strings)
+        self.__piece_level_string = __PieceLevel((0, 0), self)
+        __layouter.Game.set_piece_level(self.__piece_level_string)
         self.__release = _pieces.Array(length=1)
         self.__release.append(_pieces.Rotatable(
             (1, 1), _const.SINGLE_PRUNING, ()))
@@ -188,6 +120,7 @@ class Parent(object):
         self.__item_lot = __lottery.Item()
         self.__elm_lot = __lottery.Star()
         self.__srd_lot = __lottery.Shard()
+        self.__lv_lot = __lottery.LevelUp()
         self.__joker_lot = __lottery.Joker()
         self.__item_state = 0
         self.__display()
@@ -199,44 +132,6 @@ class Parent(object):
         self.__piece = _pieces.Falling(release, (0, 0))
         self.__window.piece = self.__piece
 
-    def eliminate(self):
-        u"""スプライトの削除等。
-        """
-        self.__piece.eliminate()
-        self.__window.kill()
-        _pygame.mixer.music.stop()
-
-    # ---- State ----
-    def hardness_up(self):
-        u"""硬度を上げる。
-        """
-        self.__hardness = (
-            self.__HARDNESS_LIMIT if
-            self.__HARDNESS_LIMIT < self.__hardness+(self.level >> 2) else
-            self.__hardness+(self.level >> 2) if
-            self.__HARDNESS_LIMIT >> 1 < self.__hardness else
-            self.__hardness+(self.level >> 1))
-
-    def hardness_down(self):
-        u"""硬度を下げる。
-        """
-        self.__hardness = self.__hardness-1 if 0 < self.__hardness-1 else 0
-
-    def luck_up(self):
-        u"""幸運を上げる。
-        """
-        self.__luck = (
-            self.__LUCK_LIMIT if
-            self.__LUCK_LIMIT < self.__luck+(self.level >> 1) else
-            self.__luck+(self.level >> 1))
-
-    def luck_down(self):
-        u"""幸運を下げる。
-        """
-        self.__luck = (
-            self.__luck-self.__LUCK_MINUS if
-            0 < self.__luck-self.__LUCK_MINUS else 0)
-
     # ---- Create Piece ----
     def get_pattern(self, level_up=True):
         u"""生成したパターンを返す。
@@ -247,7 +142,7 @@ class Parent(object):
             if level_up:
                 level = self.__levels.level
                 if level:
-                    if self.__consumed % int(level*self.__LEVEL_UP_STEP) == 0:
+                    if self.__consumed % level == 0:
                         self.__levels.level += 1
                         self.__consumed = 0
                 else:
@@ -257,67 +152,39 @@ class Parent(object):
         def __form():
             u"""パターンの変更全般。
             """
-            def __harden():
-                u"""ブロック硬化。
-                """
-                rate = self.__hardness*0.005
-                if _random.random() < rate:
-                    new.change("Solid", "Normal", is_lchange=True)
-                if (
-                    self.__HARDNESS_LIMIT >> 1 < self.__hardness and
-                    _random.random() < rate
-                ):
-                    new.change("Adamant", "Solid", is_lchange=True)
-
-            def __add_key():
-                u"""パターンに鍵追加。
-                """
-                rate = _random.random()
-                for name, value in zip(
-                    ("GoldKey", "SilverKey"),
-                    ((self.__luck*0.01)**i for i in range(2, 0, -1))
-                ):
-                    if rate <= value:
-                        return new.append(name, "Normal")
-                return new.append("BronzeKey", "Normal")
-
-            def __add_chest():
-                u"""パターンにチェスト追加。
-                """
-                rate = _random.random()
-                for name, value in zip(
-                    ("GoldChest", "SilverChest", "BronzeChest"),
-                    ((self.__luck*0.01)**i for i in range(3, 0, -1))
-                ):
-                    if rate <= value:
-                        return new.append(name, "Normal")
-                return new.append("IronChest", "Normal")
             if level_up:
                 ticket = self.__item_lot.draw()
-                if ticket == self.__item_lot.ELEMENTAL_TICKET:
+                if ticket == self.__item_lot.STAR_TICKET:
                     new.append(self.__elm_lot.draw(), "Normal")
                 elif ticket == self.__item_lot.SHARDS_TICKET:
                     new.append(self.__srd_lot.draw(), "Normal")
+                elif ticket == self.__item_lot.LEVEL_UP_TICKET:
+                    new.append(self.__lv_lot.draw(), "Normal")
                 elif ticket == self.__item_lot.KEY_TICKET:
-                    __add_key()
+                    new.append("BronzeKey", "Normal")
                 elif ticket == self.__item_lot.CHEST_TICKET:
-                    __add_chest()
+                    return new.append("IronChest", "Normal")
                 elif ticket == self.__item_lot.JOEKER_TICKET:
                     new.append("Joker", "Normal", self.__joker_lot.draw())
-                __harden()
+
+        def __has_item(names):
+            u"""保有アイテム判定。
+            """
+            return any(any(
+                shape and shape.type in names.split("#") for
+                shape in line) for line in new)
         __level_up()
         self.__piece.clear()
         new = (
             self.__levels.get() if self.__piece_lot.draw() else
             self.__basics.get())
         __form()
-        has_item = any(any(
-            shape and shape.type in self.__ITEM_NAMES.split("#") for
-            shape in line) for line in new)
-        has_joker = any(any(
-            shape and shape.type == "Joker" for
-            shape in line) for line in new) << 1
-        self.__item_state = has_item | has_joker
+        has_item = __has_item(self.__ITEM_NAMES)
+        has_joker = __has_item("Joker") << 1
+        has_level_up = __has_item(_const.LEVEL_UP_NAMES) << 2
+        has_bad_level_up = __has_item(_const.BAD_LEVEL_UP_NAMES) << 3
+        self.__item_state = (
+            has_item | has_joker | has_level_up | has_bad_level_up)
         result, = self.__release.append(new)
         self.__display()
         return result
@@ -330,25 +197,31 @@ class Parent(object):
         return self.__levels.level
 
     @property
-    def hardness(self):
-        u"""硬度レベル取得。
-        """
-        return self.__hardness
-
-    @property
-    def luck(self):
-        u"""ラックレベル取得。
-        """
-        return self.__luck
-
-    @property
     def has_item(self):
         u"""アイテム保有状態取得。
         """
-        return bool(self.__item_state & 0b01)
+        return bool(self.__item_state & 0b0001)
 
     @property
     def has_joker(self):
         u"""ジョーカー保有状態取得。
         """
-        return bool(self.__item_state & 0b10)
+        return bool(self.__item_state & 0b0010)
+
+    @property
+    def has_level_up(self):
+        u"""良性レベルアップ保有状態取得。
+        """
+        return bool(self.__item_state & 0b0100)
+
+    @property
+    def has_bad_level_up(self):
+        u"""悪性レベルアップ保有状態取得。
+        """
+        return bool(self.__item_state & 0b1000)
+
+    @property
+    def piece_level_string(self):
+        u"""ピースレベル文字列取得。
+        """
+        return self.__piece_level_string

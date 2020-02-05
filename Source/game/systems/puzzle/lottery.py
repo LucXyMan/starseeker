@@ -34,11 +34,12 @@ class Item(Lottery):
     __slots__ = ()
     __CAPACITY = 128
     BLANK_TICKET = 0
-    ELEMENTAL_TICKET = 1
-    SHARDS_TICKET = 2
-    KEY_TICKET = 3
-    CHEST_TICKET = 4
-    JOEKER_TICKET = 5
+    LEVEL_UP_TICKET = 1
+    STAR_TICKET = 2
+    SHARDS_TICKET = 3
+    KEY_TICKET = 4
+    CHEST_TICKET = 5
+    JOEKER_TICKET = 6
 
     def _reload(self):
         u"""くじの中身の生成。
@@ -46,9 +47,9 @@ class Item(Lottery):
         self._box = []
         remaining = self.__CAPACITY
         for ticket, number in (
-            (self.ELEMENTAL_TICKET, 8), (self.SHARDS_TICKET, 16),
-            (self.KEY_TICKET, 32), (self.CHEST_TICKET, 64),
-            (self.JOEKER_TICKET, 128)
+            (self.LEVEL_UP_TICKET, 4), (self.STAR_TICKET, 8),
+            (self.SHARDS_TICKET, 16), (self.KEY_TICKET, 32),
+            (self.CHEST_TICKET, 64), (self.JOEKER_TICKET, 128)
         ):
             self._box.extend([ticket]*(self.__CAPACITY/number))
             remaining -= self.__CAPACITY/number
@@ -91,6 +92,20 @@ class Shard(Lottery):
         u"""くじの中身の生成。
         """
         self._box = ["Life", "Power", "Protect", "Speed"]
+        _random.shuffle(self._box)
+
+
+class LevelUp(Lottery):
+    u"""レベルアップくじ引き。
+    """
+    __slots__ = ()
+
+    def _reload(self):
+        u"""くじの中身の生成。
+        """
+        self._box = [
+            "HardnessUp", "HardnessUp", "HardnessDown",
+            "LuckUp", "LuckUp", "LuckDown"]
         _random.shuffle(self._box)
 
 
