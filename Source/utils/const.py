@@ -11,7 +11,7 @@ This software is released under BSD license.
 # ---- System ----
 CAPTION = u"Star Seeker"
 COPYRIGHT = u"Copyright (c) 2019 Yukio Kuro"
-VERSION = u"1.1.2"
+VERSION = u"1.1.3"
 IS_MULTIPROCESSING = True
 BASE_SCREEN_SIZE = 320, 240
 MAIN_SCREEN_SIZE = 640, 480
@@ -28,6 +28,7 @@ BG_DICT = {
 SYSTEM_CHAR_SIZE = 10
 EFFECT_CHAR_SIZE = 12
 MODE_CHAR_SIZE = 32
+DIFFICULTY_TEXTS = "Easy", "Normal", "Hard"
 SPEED_TEXTS = "VeryFast", "Fast", "Normal", "Slow", "VerySlow"
 FIELD_SIZE_TEXTS = "Small", "Normal", "Large", "VeryLarge"
 # ---- Mode ----

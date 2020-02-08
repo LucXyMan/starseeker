@@ -42,7 +42,7 @@ def __integrate(directory, extensions, is_fast=False):
     is_fastの値によって暗号化方式を変更する。
     """
     meta = ""
-    body = ""
+    payload = ""
     targets = []
     extensions = tuple(
         extension.upper() for extension in extensions.split("#"))
@@ -57,11 +57,11 @@ def __integrate(directory, extensions, is_fast=False):
         meta += _struct.pack(
             _METADATA_FORMAT, _os.path.getsize(filepath), len(target))+target
         with _io.open(filepath, "rb") as infile:
-            body += infile.read()
+            payload += infile.read()
     if is_fast:
-        fast_pack(directory+(".enf"), meta+body)
+        fast_pack(directory+(".enf"), meta+payload)
     else:
-        pack(directory+(".enc"), meta+body)
+        pack(directory+(".enc"), meta+payload)
 
 
 def pack(filename, bytes_):
@@ -160,8 +160,8 @@ class Container(object):
         stored_bytes_number = 2
         metadata_bytes_number = 5
         _, ext = _os.path.splitext(filename)
-        decrypted = (
-            fast_unpack if ext.upper() == ".ENF" else unpack)(filename)
+        func = fast_unpack if ext.upper() == ".ENF" else unpack
+        decrypted = func(filename)
         data_number, = _struct.unpack(
              _STORED_NUMBER_FORMAT, decrypted.read(stored_bytes_number))
         values = []

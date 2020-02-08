@@ -124,7 +124,7 @@ class Controllable(UI):
     u"""操作UI。
     """
     __slots__ = "_controls", "_cursor"
-    WINDOW_ROW = 8
+    WINDOW_COL = 8
 
     def __init__(self):
         u"""コンストラクタ。
@@ -167,7 +167,7 @@ class Controllable(UI):
             if window.is_label:
                 window.cursor -= 1
             else:
-                window.cursor -= self.WINDOW_ROW
+                window.cursor -= self.WINDOW_COL
         else:
             self.cursor -= 1
         self._update_notice()
@@ -181,7 +181,7 @@ class Controllable(UI):
             if window.is_label:
                 window.cursor += 1
             else:
-                window.cursor += self.WINDOW_ROW
+                window.cursor += self.WINDOW_COL
         else:
             self.cursor += 1
         self._update_notice()

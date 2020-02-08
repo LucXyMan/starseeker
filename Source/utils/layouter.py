@@ -361,8 +361,8 @@ class Menu(_Layouter):
         sprite.rect.midbottom = cls._screen.midbottom
 
     @classmethod
-    def set_speed(cls, sprite):
-        u"""カーソル速度・プレイヤー名・ネクストレベル位置設定。
+    def set_option(cls, sprite):
+        u"""オプション位置設定。
         """
         sprite.rect.bottomleft = cls._screen.bottomleft
 

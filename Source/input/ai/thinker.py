@@ -24,7 +24,6 @@ class Thinker(object):
         (3, 0): True, (3, 1): False, (3, 2): False}
     __TIMEOUT = 1
     __REACTION_RATE = 6
-    __IS_ADVANCED_DETECTION = False
 
     def __init__(self, systems):
         u"""コンストラクタ。
@@ -92,6 +91,8 @@ class Thinker(object):
         def __output_command():
             u"""コマンド出力。
             """
+            import inventories as __inventories
+
             def __analyse_command():
                 u"""コマンド解析。
                 現在位置より上のコマンドは取り除かれる。
@@ -124,10 +125,10 @@ class Thinker(object):
                 self.__system.is_throwing and
                 not self.__is_standby and self.__cmds
             ):
+                difficulty = __inventories.General.get_difficulty()
                 field = self.__system.puzzle.field
                 parent = self.__system.puzzle.parent
-                self.__system.puzzle.next
-                if self.__IS_ADVANCED_DETECTION:
+                if 1 < difficulty:
                     has_item = parent.has_item or parent.has_level_up
                     has_bad_item = parent.has_joker or parent.has_bad_level_up
                 else:
@@ -136,7 +137,9 @@ class Thinker(object):
                 has_rs = self.__system.has_skill(__const.REVERSE_SORCERY_SKILL)
                 has_item = has_item or parent.has_joker and has_rs
                 is_more_than_half = field.highest <= field.height >> 1
-                rush = has_item+is_more_than_half-has_bad_item
+                rush = is_more_than_half
+                if 0 < difficulty:
+                    rush += has_item-has_bad_item
                 waiting = self.__waiting+1
                 input_interval = (
                     self.__REACTION_RATE << 1 if rush < 0 else

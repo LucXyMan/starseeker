@@ -24,20 +24,31 @@ class _String(_string.String):
             pos, "", _const.SYSTEM_CHAR_SIZE, groups=groups)
 
 
-class _Speed(_String):
-    u"""ピース・カーソル速度文字列。
+class _Option(_String):
+    u"""オプション文字列。
     """
     def __init__(self, groups=None):
         u"""コンストラクタ。
         """
-        super(_Speed, self).__init__((0, 0), groups)
+        self.__old = -1, -1
+        super(_Option, self).__init__((0, 0), groups)
 
     def update(self):
         u"""文字列更新。
         """
-        self.string = u"Speed:{}".format(
-            _const.SPEED_TEXTS[_inventories.General.get_speed()])
-        _layouter.Menu.set_speed(self)
+        difficulty = _inventories.General.get_difficulty()
+        speed = _inventories.General.get_speed()
+        old_difficulty, old_speed = self.__old
+        if old_difficulty != difficulty:
+            self.string = u"Difficulty:{difficulty}".format(
+                difficulty=_const.DIFFICULTY_TEXTS[difficulty])
+            self.__old = difficulty, speed
+            _layouter.Menu.set_option(self)
+        elif old_speed != speed:
+            self.string = u"Speed:{speed}".format(
+                speed=_const.SPEED_TEXTS[speed])
+            self.__old = difficulty, speed
+            _layouter.Menu.set_option(self)
 
 
 class _Player(_String):
@@ -54,7 +65,7 @@ class _Player(_String):
         import armament.units as __units
         self.string = u"Player:{name}".format(
             name=__units.get_player(_inventories.General.get_player()).name)
-        _layouter.Menu.set_speed(self)
+        _layouter.Menu.set_option(self)
 
 
 class _Next(_String):
@@ -71,7 +82,7 @@ class _Next(_String):
         level = _inventories.Endless.get_progress()+1
         self.string = u"NextLevel:{level}".format(
             level=(level if level < _const.ENDLESS_LIMIT else u"??"))
-        _layouter.Menu.set_speed(self)
+        _layouter.Menu.set_option(self)
 
 
 class _Level(_String):
@@ -193,14 +204,14 @@ class Notice(object):
         u"""速度表示取得。
         """
         return isinstance(
-            self.__strings[self.__BOTTOM_LEFT_SLOT], _Speed)
+            self.__strings[self.__BOTTOM_LEFT_SLOT], _Option)
 
     @has_speed.setter
     def has_speed(self, value):
         u"""速度表示設定。
         """
         self.__set_string(
-            self.__BOTTOM_LEFT_SLOT, _Speed if bool(value) else None)
+            self.__BOTTOM_LEFT_SLOT, _Option if bool(value) else None)
 
     @property
     def has_player(self):

@@ -44,7 +44,7 @@ class Result(_ui.Controllable):
                 if number != 0:
                     self.append(__label.General((0, 0), number, ()))
         super(Result, self).__init__()
-        col, row = _ui.Controllable.WINDOW_ROW, 2
+        col, row = _ui.Controllable.WINDOW_COL, 2
         self._controls = []
         window = __window.Icon(
             (0, 0, col*_const.GRID, row*_const.GRID), (col, row))

@@ -50,6 +50,7 @@ class Searcher(__PPType):
     def run(self):
         u"""AIの起動。
         """
+        import time as __time
         import command as __command
 
         def __get_tactics():
@@ -306,7 +307,9 @@ class Searcher(__PPType):
                 return [__command.Simple(_const.UP_COMMAND)]
             else:
                 return [hold_command]
+        waiting_time = 1./_const.FRAME_RATE
         while self.__is_drive:
+            __time.sleep(waiting_time)
             if not self.__in.empty():
                 cmd, args = self.__in.get_nowait()
                 if cmd == "search":

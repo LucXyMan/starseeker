@@ -31,6 +31,12 @@ class General(__inventory.Inventory):
         return cls._players[cls.get_player()].learnable
 
     @classmethod
+    def get_difficulty(cls):
+        u"""ゲーム難易度取得。
+        """
+        return cls._general.get(cls._DIFFICULTY_SLOT)
+
+    @classmethod
     def get_speed(cls):
         u"""カーソル移動速度取得。
         """
@@ -50,6 +56,12 @@ class General(__inventory.Inventory):
         cls._general.set(cls.__PLAYER_SLOT, (
             0 if value < 0 else value if value < _const.PLEYERS-1 else
             _const.PLEYERS-1))
+
+    @classmethod
+    def set_difficulty(cls, value):
+        u"""ゲーム難易度設定。
+        """
+        return cls._general.set(cls._DIFFICULTY_SLOT, value)
 
     @classmethod
     def set_speed(cls, value):

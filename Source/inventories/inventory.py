@@ -19,7 +19,7 @@ def get_config_dir():
     import sys as __sys
     userdir = _os.path.expanduser("~")
     return (
-        _os.path.join(userdir, "AppData", "Local", "Star Seeker") if
+        _os.path.join(userdir, "AppData", "Local", "StarSeeker") if
         __sys.platform.startswith(("win", "cygwin")) else
         _os.path.join(userdir, ".config", "starseeker"))
 

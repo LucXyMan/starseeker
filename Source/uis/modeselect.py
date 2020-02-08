@@ -162,7 +162,7 @@ class ModeSelect(__ui.UI):
             u"{2}:対人戦"+joystick+u"{3}:装備設定##" +
             u"{4}:セーブして終了").format(*self.__MODES.split("#")).split("##")
         _sprites.Notice.notify((
-            u"{}#使用・削除キーでスピード変更#" +
+            u"{}#左右キーで難易度変更#使用・削除キーでスピード変更#" +
             _const.COPYRIGHT+u"#Version "+_const.VERSION
         ).format(description[self._selector.cursor]))
 
@@ -207,6 +207,21 @@ class ModeSelect(__ui.UI):
             _sound.SE.play("cursor_1")
         self.__update_notice()
         return 0
+
+    def right(self):
+        u"""右方向キー入力。
+        """
+        value = _inventories.General.get_difficulty()-1
+        _inventories.General.set_difficulty(0 if value < 0 else value)
+        return _const.IGNORE_STATUS
+
+    def left(self):
+        u"""左方向キー入力。
+        """
+        value = _inventories.General.get_difficulty()+1
+        limit = len(_const.DIFFICULTY_TEXTS)-1
+        _inventories.General.set_difficulty(value if value < limit else limit)
+        return _const.IGNORE_STATUS
 
     def decision(self):
         u"""決定キー入力。

@@ -212,10 +212,10 @@ class Customize(_ui.Controllable):
     """
     __slots__ = "_cmds",
     __PLAYER_NUMBER = 8
-    __MATRIX = _ui.Controllable.WINDOW_ROW, 4
-    __ITEM_MATRIX = _ui.Controllable.WINDOW_ROW, 24
-    __SKILL_MATRIX = _ui.Controllable.WINDOW_ROW, 16
-    __DECK_MATRIX = _ui.Controllable.WINDOW_ROW, 12
+    __MATRIX = _ui.Controllable.WINDOW_COL, 4
+    __ITEM_MATRIX = _ui.Controllable.WINDOW_COL, 24
+    __SKILL_MATRIX = _ui.Controllable.WINDOW_COL, 16
+    __DECK_MATRIX = _ui.Controllable.WINDOW_COL, 12
 
     def __init__(self):
         u"""コンストラクタ。

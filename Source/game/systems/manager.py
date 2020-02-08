@@ -194,8 +194,7 @@ class __Manager(object):
         u"""クリーチャー撃破処理。
         """
         if not (
-            self._1p.puzzle.field.is_active or
-            self._2p.puzzle.field.is_active
+            self._1p.puzzle.field.is_active or self._2p.puzzle.field.is_active
         ):
             if self._1p.is_lose:
                 self._1p.battle.group.destroy(
@@ -233,7 +232,9 @@ class __Manager(object):
         u"""勝利時のリザルト処理。
         """
         _sound.SE.play("bonus")
-        added = self._get_sp(self._1p.resource.total)
+        added = (
+            self._get_sp(self._1p.resource.total) <<
+            _inventories.General.get_difficulty())
         _inventories.add_sp(added)
         self._1p.battle.player.add_effect(_effects.Bonus(
             _screen.Screen.get_base().get_rect().center, added))
@@ -414,8 +415,7 @@ class Versus(__Manager):
     def result(self):
         u"""リザルト処理。
         """
-        added = self._get_sp(
-            self._1p.resource.total+self._2p.resource.total >> 1)
+        added = self._get_sp(self._1p.resource.total+self._2p.resource.total)
         _inventories.add_sp(added)
         _sound.SE.play("bonus")
         self._1p.battle.player.add_effect(_effects.Bonus(

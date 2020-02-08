@@ -2,13 +2,13 @@
 
 ![main](https://raw.githubusercontent.com/LucXyMan/storage/master/starseeker/main.png)
 
-Version1.1.2
+Version1.1.3
 
 ## 概要
 RPG+カード+パズルゲーム。
 
 ## 動作環境
-本プログラムはPythonで書かれています。
+このゲームはPythonで書かれています。
 以下のインストールが必要です。
 
 - python 2.7.15: https://www.python.org
@@ -41,7 +41,7 @@ Windows 7, Ubuntu 18.04.1 で動作確認しています。
 #### Windows
 C:\Users\userdir\AppData\Local\Star Seeker
 
-#### Linix
+#### Linux
 /home/userdir/.config/starseeker
 
 ## ゲームの始め方
@@ -86,6 +86,7 @@ C:\Users\userdir\AppData\Local\Star Seeker
 - 2019年12月26日: 1.0.3 サポートカード実装。
 - 2020年02月04日: 1.1.1 装備スキル実装。
 - 2020年02月06日: 1.1.2 レベルアップブロック実装。
+- 2020年02月08日: 1.1.3 難易度変更機能実装。
 
 ## ライセンス
 [BSD 3-Clause License](/LICENSE)
